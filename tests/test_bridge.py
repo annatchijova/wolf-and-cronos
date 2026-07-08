@@ -435,6 +435,46 @@ class TestRT04ArtifactIdCap(unittest.TestCase):
         self.assertEqual(result.audit_warnings, [])
 
 
+class TestRT08TextCap(unittest.TestCase):
+    """
+    RT-08 — `text`, the highest-attacker-control input, must be bounded
+    the same way RT-04 bounded artifact_id/user_id. Unlike those two IDs,
+    text is what actually runs through all six parallel detector algorithms,
+    making it the more consequential unbounded-size input, per the
+    hostile-input probe table (Size class: 10 MB body / one huge line).
+
+    Mutation caught: removing the `text[:MAX_TEXT_CHARS]` truncation makes
+    the oversized-input case take proportionally longer / risk unbounded
+    memory in the detectors, and this test's length assertion would fail.
+    """
+
+    def setUp(self):
+        self._tmpfile = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+        self._db_path = self._tmpfile.name
+        self._tmpfile.close()
+        self._bridge = CorvosCronosBridge(db_path=self._db_path)
+
+    def tearDown(self):
+        self._bridge.close()
+        if os.path.exists(self._db_path):
+            os.unlink(self._db_path)
+
+    def test_oversized_text_does_not_raise(self):
+        from corvus_cronos.bridge import MAX_TEXT_CHARS
+
+        huge_text = "urgent act now " * (MAX_TEXT_CHARS // 10)
+        result = self._bridge.analyze(huge_text, artifact_id="RT08-a")
+        self.assertIsInstance(result, NegotiationResult)
+
+    def test_oversized_text_is_truncated_before_analysis(self):
+        """analysis_result.text reflects the capped length, not the raw input."""
+        from corvus_cronos.bridge import MAX_TEXT_CHARS
+
+        huge_text = "x" * (MAX_TEXT_CHARS + 10_000)
+        result = self._bridge.analyze(huge_text, artifact_id="RT08-b")
+        self.assertLessEqual(len(result.analysis_result.text), MAX_TEXT_CHARS)
+
+
 # ---------------------------------------------------------------------------
 # Rec-3 — CRONOS write failure surfaced in audit_warnings, not raised
 # ---------------------------------------------------------------------------
@@ -532,6 +572,91 @@ class TestRTConcurrentAnalyze(unittest.TestCase):
                 r.chain_valid,
                 f"Chain invalid after concurrent write: {r.chain_errors}",
             )
+
+
+class TestRT09BaselineReadUnderLock(unittest.TestCase):
+    """
+    RT-09 — Phase 0's MemoryEngine baseline read must serialize with
+    Phases 7-9's MemoryEngine write via the same _write_lock.
+
+    Threat: Phase 0 previously ran unlocked while described as a "read-only
+    CORVUS detector" phase, but it is actually a MemoryEngine (SQLite-backed)
+    read sharing state with the locked Phase 9 write — a concurrent
+    analyze() call from another thread could race a read against a write.
+
+    Invariant: while get_user_baseline() executes, _write_lock.locked() is True.
+    Mutation caught: removing the `with self._write_lock:` around the Phase 0
+    read makes this assertion fail (locked() would be False).
+    """
+
+    def setUp(self):
+        self._tmpfile = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+        self._db_path = self._tmpfile.name
+        self._tmpfile.close()
+        self._mem_tmpfile = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+        self._mem_db_path = self._mem_tmpfile.name
+        self._mem_tmpfile.close()
+        self._bridge = CorvosCronosBridge(
+            db_path=self._db_path, memory_db_path=self._mem_db_path,
+        )
+
+    def tearDown(self):
+        self._bridge.close()
+        for p in (self._db_path, self._mem_db_path):
+            if os.path.exists(p):
+                os.unlink(p)
+
+    def test_baseline_read_holds_write_lock(self):
+        observed = {"locked": None}
+        original = self._bridge._memory.get_user_baseline
+
+        def _spy(user_id):
+            observed["locked"] = self._bridge._write_lock.locked()
+            return original(user_id)
+
+        self._bridge._memory.get_user_baseline = _spy
+        result = self._bridge.analyze(BENIGN_TEXT, artifact_id="RT09-a", user_id="rt09-user")
+
+        self.assertIsInstance(result, NegotiationResult)
+        self.assertTrue(
+            observed["locked"],
+            "Phase 0 baseline read ran without holding _write_lock",
+        )
+
+
+class TestRT07ToFractionLogsOnCoercionFailure(unittest.TestCase):
+    """
+    RT-07 — _to_fraction() must log (not silently swallow) when it falls
+    back to Fraction(0) on a malformed value, mirroring RT-01's discipline
+    for detector crashes: a coerced-to-zero severity must be distinguishable,
+    in the logs, from a genuine zero reading.
+
+    Mutation caught: removing the log.warning() call makes assertLogs fail
+    (no WARNING record emitted) while the return value stays Fraction(0).
+    """
+
+    def test_nan_falls_back_to_zero_with_warning(self):
+        from corvus_cronos.bridge import _to_fraction, log
+
+        with self.assertLogs(log, level="WARNING") as cm:
+            result = _to_fraction(float("nan"))
+        self.assertEqual(result, Fraction(0))
+        self.assertTrue(any("_to_fraction" in msg for msg in cm.output))
+
+    def test_non_numeric_string_falls_back_to_zero_with_warning(self):
+        from corvus_cronos.bridge import _to_fraction, log
+
+        with self.assertLogs(log, level="WARNING") as cm:
+            result = _to_fraction("high")
+        self.assertEqual(result, Fraction(0))
+        self.assertTrue(any("_to_fraction" in msg for msg in cm.output))
+
+    def test_well_formed_value_does_not_log(self):
+        from corvus_cronos.bridge import _to_fraction
+
+        with self.assertNoLogs("qwen_track3.bridge", level="WARNING"):
+            result = _to_fraction(0.5)
+        self.assertEqual(result, Fraction(1, 2))
 
 
 if __name__ == "__main__":

@@ -89,7 +89,7 @@ Qwen (`qwen-plus` via DashScope) provides the **narrative layer only**:
 
 ```bash
 export DASHSCOPE_API_KEY="sk-..."
-python3 demo.py
+python3 scripts/demo.py
 ```
 
 Without `DASHSCOPE_API_KEY`, the system runs fully deterministically (fallback narration).
@@ -99,7 +99,7 @@ Without `DASHSCOPE_API_KEY`, the system runs fully deterministically (fallback n
 ## Benchmark (single-arbiter vs. multi-agent)
 
 ```
-python3 benchmark.py
+python3 benchmark/benchmark.py
 ```
 
 On the 20-sample built-in corpus (12 deceptive, 8 benign):
@@ -119,17 +119,17 @@ For a forensic system, FPR is the critical metric — false alarms destroy analy
 
 ```bash
 # Dependencies
-pip install openai   # for Qwen narration (optional)
+pip install requests   # HTTP client used for Qwen narration (see requirements.txt)
 # CORVUS and CRONOS are resolved from ../corvus and ../cronos
 
 # Demo (deterministic, no API key needed)
-python3 demo.py
+python3 scripts/demo.py
 
 # Demo with Qwen narration
-DASHSCOPE_API_KEY=sk-... python3 demo.py
+DASHSCOPE_API_KEY=sk-... python3 scripts/demo.py
 
 # Benchmark
-python3 benchmark.py
+python3 benchmark/benchmark.py
 
 # Tests
 python3 -m pytest tests/ -v

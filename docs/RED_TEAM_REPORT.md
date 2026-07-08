@@ -34,9 +34,12 @@ CRONOS and CORVUS internals were read but not modified.
 | RT-01 | MEDIUM   | CONFIRMED BY INDUCTION   | bridge.py    | Detector crash indistinguishable from genuine SILENT result |
 | RT-02 | LOW-MED  | CONFIRMED BY INDUCTION   | narrator.py  | Raw user text injected into Qwen prompt — sentinel smuggling |
 | RT-03 | LOW      | CONFIRMED BY INDUCTION   | bridge.py    | Active agents record gate verdict in CRONOS, not own vote |
-| RT-04 | LOW      | PLAUSIBLE HYPOTHESIS     | bridge.py    | `artifact_id` flows into CRONOS `channel_id` without length cap |
-| RT-05 | HYGIENE  | CODE FACT                | benchmark.py | `os.environ` mutation for threshold is not thread-safe |
+| RT-04 | LOW      | CONFIRMED BY INDUCTION   | bridge.py    | `artifact_id`/`user_id` flow into CRONOS without length cap — **fixed, see Round 2** |
+| RT-05 | HYGIENE  | CODE FACT                | benchmark.py | `os.environ` mutation for threshold is not thread-safe — still open |
 | RT-06 | —        | FALSIFIED                | bridge.py    | CRONOS write after verdict — feared write could be skipped |
+| RT-07 | LOW-MED  | CONFIRMED behavior / PLAUSIBLE reachability | bridge.py | `_to_fraction()` swallows malformed values to `Fraction(0)` with no log — **fixed, see Round 2** |
+| RT-08 | MEDIUM   | PLAUSIBLE HYPOTHESIS     | bridge.py    | `text` (the highest-attacker-control input) has no length cap, unlike `artifact_id`/`user_id` — **fixed, see Round 2** |
+| RT-09 | LOW-MED  | PLAUSIBLE HYPOTHESIS     | bridge.py    | Phase 0 MemoryEngine baseline read ran unlocked while sharing a store with the locked Phase 9 write — **fixed, see Round 2** |
 
 ---
 
@@ -207,7 +210,7 @@ agent's trace represents only its own analysis is violated.
 
 ### RT-04 — `artifact_id` flows into CRONOS without length cap
 
-**Severity:** LOW  **Epistemic level:** PLAUSIBLE HYPOTHESIS
+**Severity:** LOW  **Epistemic level:** CONFIRMED BY INDUCTION (updated in Round 2 — see below)
 **Bucket:** Hygiene (input validation at system boundary)
 
 **Abduction:**
@@ -220,12 +223,15 @@ serialization of the objective field.
 `bridge.analyze("text", artifact_id="A" * 10_000_000)` would write a 10 MB string
 into the CRONOS `traces` table's objective column on every of the 7 traces.
 
-**Induction:** Not run. The threat model requires the caller to control `artifact_id`,
-which in the hackathon context is always a short case identifier. Capped at
-PLAUSIBLE HYPOTHESIS.
+**Status: FIXED.** `bridge.analyze()` now truncates `artifact_id` to 256 chars and
+`user_id` to 128 chars at the top of the method, with `TestRT04ArtifactIdCap`
+regression tests. This contradicts the original "Not applied in this session"
+note below the recommendation — that note went stale after the fix landed and
+was corrected in Round 2 (see the note there on doc drift). Left the original
+recommendation text visible for the audit trail; do not trust it over the code.
 
-**Recommendation:** Add `artifact_id = artifact_id[:256]` at the top of `analyze()`.
-Not applied in this session — this is hardening, not a confirmed exploit.
+**Original recommendation (now applied):** Add `artifact_id = artifact_id[:256]`
+at the top of `analyze()`.
 
 ---
 
@@ -274,12 +280,133 @@ Suite result: 36/36 passed, 7 subtests passed
 
 ---
 
-## Recommendations (not applied in this session)
+## Recommendations (status as of Round 2)
 
-1. **RT-04** — Cap `artifact_id` at 256 characters in `bridge.analyze()`.
+1. ~~**RT-04** — Cap `artifact_id` at 256 characters in `bridge.analyze()`.~~ **Applied** (see RT-04 above).
 2. **RT-05** — Pass threshold to `Config` constructor instead of mutating `os.environ`
-   in `benchmark.py` if benchmark ever runs in a parallel context.
+   in `benchmark.py` if benchmark ever runs in a parallel context. **Still open** —
+   benchmark.py remains CLI-only single-process; not addressed in Round 2.
 3. **General** — Add a `CRONOS_WRITE_FAILED` entry to `crashed_agents` (or a new
    `audit_warnings` field) if any `CronosTracer.__exit__` raises, so a
    partial-write condition is surfaced in the result object rather than propagating
-   as an uncaught exception.
+   as an uncaught exception. **Applied** — `Rec-3` in `_trace_agents`/`_trace_gate`,
+   see `TestRec3AuditWarnings`. (Predates Round 2; this list item was itself stale.)
+
+---
+
+## Round 2 — 2026-07-08
+
+**Method:** Abductive Engineering (A-D-I) + Secure-by-Construction + Software
+Archaeology. **Scope:** the whole repo as delivered for the hackathon
+submission, read with the assumption that a judge clones only this repository
+(no sibling `corvus`/`cronos` checkouts, no prior session context).
+
+This round's surprising fact was different from Round 1's: **the repo could
+not be run or tested at all** in an environment holding only this repository —
+not a narrow exploit in one function, but a structural gap in what a judge
+can verify. That surprise drove most of this round's findings; RT-07/08/09
+are narrower recurrences of Round 1's own defect classes, found by re-applying
+Round 1's own reasoning to the fields/paths it didn't originally cover.
+
+### Packaging / doc-drift findings (not RT-numbered — no attacker involved)
+
+- **`corvus_cronos/__init__.py` eagerly imported `bridge.py`**, which imports
+  CORVUS/CRONOS at module load time. This forced every submodule import —
+  including `qwen_client.py`, a standalone HTTP client with zero CORVUS/CRONOS
+  coupling by its own docstring — to require the sibling repos. Confirmed by
+  running `tests/test_qwen_client.py`: 0/8 tests collectible before the fix,
+  7/8 passing after (the 8th, `TestNarratorOffline`, genuinely needs the
+  bridge). **Fixed** — `CorvosCronosBridge`/`NegotiationResult`/`AgentTraceMeta`
+  are now exposed via module `__getattr__` (PEP 562), imported lazily on first
+  access instead of at package-import time.
+- **`pyproject.toml`'s `corvus-demo` console script pointed at
+  `corvus_cronos.bridge:main`**, which does not exist anywhere in the package
+  (confirmed by grep). Running the installed command would always fail.
+  **Fixed** — removed the entry point; there is no valid installable target
+  (`scripts/demo.py` is intentionally excluded from the package and requires
+  the sibling repos at runtime).
+- **README.md quick-start commands were stale** after commit `92e8419`
+  ("reorganize into package layout") moved `demo.py` → `scripts/demo.py` and
+  `benchmark.py` → `benchmark/benchmark.py` without updating the README
+  (`git show 92e8419 -- README.md` is an empty diff). `python3 demo.py` /
+  `python3 benchmark.py` both failed with `FileNotFoundError` from the repo
+  root. Also corrected "pip install openai" — `qwen_client.py` uses `requests`
+  directly, no `openai` SDK, and `requests` is already a required (not
+  optional) dependency. **Fixed.**
+- **This report's own RT-04 entry was stale** — it said "Not applied in this
+  session" after a later, unreported change had already applied the fix. Same
+  antipattern as the README case, applied to a doc instead of code. **Fixed**
+  (see RT-04 above) — this is the "trusting the comment over the code"
+  antipattern from `software-archaeology`, and the report itself was not
+  exempt from it.
+
+### RT-07 — `_to_fraction()` swallows malformed values to zero, silently
+
+**Severity:** LOW-MEDIUM **Epistemic level:** CONFIRMED (the collapse behavior) /
+PLAUSIBLE HYPOTHESIS (that a real CORVUS detector can produce such a value —
+unverifiable without CORVUS source)
+**Bucket:** Software vulnerability (recurrence of RT-01's defect class)
+
+`_to_fraction(value)` caught every exception from the `float()`/`Fraction()`
+coercion and returned `Fraction(0)`, with no log. Tested directly: `nan`,
+`inf`, `"high"`, and `None` all silently become `0`. This is the same defect
+class as RT-01 (a crash/malformed-input silently indistinguishable from a
+genuine zero/SILENT reading) recurring in a helper RT-01's fix didn't touch.
+The two `_trace_agents` call sites already guard with `severity or
+Fraction(1, 2)`, but `baseline_delta`'s `avg = _to_fraction(avg_raw)` has no
+such fallback — a corrupted `avg_signals_per_message` in a MemoryEngine
+baseline would silently shift `baseline_delta` with no audit trail.
+
+**Fix applied:** `log.warning()` on the fallback path. **Test:**
+`TestRT07ToFractionLogsOnCoercionFailure` (NaN, non-numeric string, and a
+well-formed-value negative check via `assertNoLogs`).
+
+### RT-08 — `text` has no length cap (RT-04 covered `artifact_id`/`user_id`, not `text`)
+
+**Severity:** MEDIUM **Epistemic level:** PLAUSIBLE HYPOTHESIS (not exploited,
+reasoned from the hostile-input probe table's Size class)
+**Bucket:** Software vulnerability (input validation at system boundary)
+
+RT-04 capped `artifact_id` (256) and `user_id` (128), citing unbounded CRONOS
+writes as the risk. `text` — the field with the most attacker control, and
+the one actually run through all six parallel detector algorithms plus
+hashed in Phase 5 — had no cap anywhere in `bridge.py`. The narrator truncates
+to 300 chars for the Qwen prompt, but only after CORVUS has already processed
+the full, unbounded text.
+
+**Fix applied:** `MAX_TEXT_CHARS = 50_000`, truncated at the top of
+`analyze()` alongside the existing `artifact_id`/`user_id` caps. **Test:**
+`TestRT08TextCap`.
+
+### RT-09 — Phase 0 MemoryEngine read ran unlocked, sharing state with the locked Phase 9 write
+
+**Severity:** LOW-MEDIUM **Epistemic level:** PLAUSIBLE HYPOTHESIS (not
+executed against real concurrent MemoryEngine traffic — no existing test
+configures `memory_db_path` under `TestRTConcurrentAnalyze`, and MemoryEngine
+internals are not in this repo to inspect)
+**Bucket:** Software vulnerability (concurrency)
+
+The `_write_lock` docstring described Phases 1-6 as "read-only CORVUS
+detectors" run without the lock. But Phase 0's
+`self._memory.get_user_baseline(user_id)` is a MemoryEngine (SQLite-backed)
+read, not a CORVUS detector, sharing the same store that Phase 9's
+`store_message()` writes to under the lock. Two threads sharing one bridge
+instance could race a Phase 0 read against another thread's Phase 9 write.
+
+**Fix applied:** wrapped the Phase 0 baseline read in `with self._write_lock:`
+(a second, non-nested acquire/release — no deadlock risk). **Test:**
+`TestRT09BaselineReadUnderLock`, which spies on `get_user_baseline()` to
+assert the lock is held while it runs.
+
+### Honest status for Round 2
+
+All four `bridge.py`/`__init__.py` changes were verified with `py_compile`
+only (no syntax errors) except the `__init__.py` lazy-import fix, which was
+verified by actual execution — `import corvus_cronos.qwen_client` now
+succeeds standalone, and `tests/test_qwen_client.py` goes from 0/8 to 7/8
+passing, in this very environment (CORVUS/CRONOS genuinely absent here,
+which made it possible to prove this one directly). RT-07/08/09's new
+regression tests are written but **not run** — `tests/test_bridge.py`
+requires CORVUS/CRONOS, not present in this environment. Whoever runs this
+with the sibling repos present should treat "written, not run" as the honest
+ceiling until the suite is actually executed.

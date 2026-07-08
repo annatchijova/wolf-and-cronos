@@ -73,6 +73,14 @@ from typing import Optional
 
 log = logging.getLogger("qwen_track3.bridge")
 
+# RT-08: cap the analyzed text itself, not just artifact_id/user_id (RT-04).
+# `text` is the highest-attacker-control input and the one actually run
+# through all six detector algorithms in parallel; unlike artifact_id it
+# had no bound at all. 50k chars is generous for the single-message /
+# short-conversation use case this system targets while bounding worst-case
+# detector CPU/memory and the JSON payload hashed in Phase 5.
+MAX_TEXT_CHARS = 50_000
+
 # ---------------------------------------------------------------------------
 # Resolve CORVUS and CRONOS on sys.path (no install required for the demo)
 # ---------------------------------------------------------------------------
@@ -105,12 +113,22 @@ from cronos import CronosTracer, TraceStore
 # ---------------------------------------------------------------------------
 
 def _to_fraction(value) -> Fraction:
-    """Safely coerce a Fraction, float, or int severity to Fraction."""
+    """Safely coerce a Fraction, float, or int severity to Fraction.
+
+    Falls back to Fraction(0) on anything malformed (NaN, Infinity,
+    non-numeric strings, None) — logged at WARNING, not silent, since a
+    swallowed-to-zero severity is indistinguishable from a genuine zero
+    reading (the same class of defect fixed as RT-01 for detector crashes).
+    """
     if isinstance(value, Fraction):
         return value
     try:
         return Fraction(str(round(float(value), 9)))
-    except Exception:
+    except Exception as exc:
+        log.warning(
+            "_to_fraction: could not coerce %r to Fraction (%s) — defaulting to 0",
+            value, exc,
+        )
         return Fraction(0)
 
 
@@ -254,11 +272,13 @@ class CorvosCronosBridge:
         self._l5 = LinguisticsDetector()
         self._l6 = PeirceDetector()
 
-        # Concurrency guard — CRONOS+MemoryEngine writes are not re-entrant.
-        # A single bridge instance shared across threads must serialize Phases
-        # 7-9 (trace writes, chain verify, memory store).  Analysis Phases 1-6
-        # (read-only CORVUS detectors) run without the lock so parallel calls
-        # still benefit from their internal thread pool.
+        # Concurrency guard — CRONOS+MemoryEngine access is not re-entrant.
+        # A single bridge instance shared across threads must serialize any
+        # touch of those two stores: Phase 0 (MemoryEngine baseline read) and
+        # Phases 7-9 (CRONOS trace writes, chain verify, MemoryEngine store).
+        # Phases 1-6 (the CORVUS detectors themselves, pure computation over
+        # the already-resolved baseline) run without the lock so parallel
+        # calls still benefit from their internal thread pool.
         self._write_lock = threading.Lock()
 
         # CORVUS MemoryEngine — optional, disabled when memory_db_path is None
@@ -310,6 +330,8 @@ class CorvosCronosBridge:
         # RT-04: cap artifact_id to prevent unbounded CRONOS objective strings
         artifact_id = str(artifact_id)[:256]
         user_id     = str(user_id)[:128]
+        # RT-08: cap text itself — see MAX_TEXT_CHARS for rationale.
+        text        = str(text)[:MAX_TEXT_CHARS]
 
         ts = datetime.now(tz=timezone.utc).isoformat()
         history = conversation_history or []
@@ -319,7 +341,11 @@ class CorvosCronosBridge:
         if user_baseline is not None:
             baseline = dict(user_baseline)
         elif self._memory is not None:
-            baseline = self._memory.get_user_baseline(user_id)
+            # Shares the write lock with Phases 7-9: this is a MemoryEngine
+            # read, not a CORVUS detector, and MemoryEngine is not guaranteed
+            # safe against a concurrent store_message() from another thread.
+            with self._write_lock:
+                baseline = self._memory.get_user_baseline(user_id)
         else:
             baseline = {}
 
