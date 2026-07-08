@@ -105,12 +105,22 @@ from cronos import CronosTracer, TraceStore
 # ---------------------------------------------------------------------------
 
 def _to_fraction(value) -> Fraction:
-    """Safely coerce a Fraction, float, or int severity to Fraction."""
+    """Safely coerce a Fraction, float, or int severity to Fraction.
+
+    Falls back to Fraction(0) on anything malformed (NaN, Infinity,
+    non-numeric strings, None) — logged at WARNING, not silent, since a
+    swallowed-to-zero severity is indistinguishable from a genuine zero
+    reading (the same class of defect fixed as RT-01 for detector crashes).
+    """
     if isinstance(value, Fraction):
         return value
     try:
         return Fraction(str(round(float(value), 9)))
-    except Exception:
+    except Exception as exc:
+        log.warning(
+            "_to_fraction: could not coerce %r to Fraction (%s) — defaulting to 0",
+            value, exc,
+        )
         return Fraction(0)
 
 

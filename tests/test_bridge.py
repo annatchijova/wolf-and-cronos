@@ -534,5 +534,40 @@ class TestRTConcurrentAnalyze(unittest.TestCase):
             )
 
 
+class TestRT07ToFractionLogsOnCoercionFailure(unittest.TestCase):
+    """
+    RT-07 — _to_fraction() must log (not silently swallow) when it falls
+    back to Fraction(0) on a malformed value, mirroring RT-01's discipline
+    for detector crashes: a coerced-to-zero severity must be distinguishable,
+    in the logs, from a genuine zero reading.
+
+    Mutation caught: removing the log.warning() call makes assertLogs fail
+    (no WARNING record emitted) while the return value stays Fraction(0).
+    """
+
+    def test_nan_falls_back_to_zero_with_warning(self):
+        from corvus_cronos.bridge import _to_fraction, log
+
+        with self.assertLogs(log, level="WARNING") as cm:
+            result = _to_fraction(float("nan"))
+        self.assertEqual(result, Fraction(0))
+        self.assertTrue(any("_to_fraction" in msg for msg in cm.output))
+
+    def test_non_numeric_string_falls_back_to_zero_with_warning(self):
+        from corvus_cronos.bridge import _to_fraction, log
+
+        with self.assertLogs(log, level="WARNING") as cm:
+            result = _to_fraction("high")
+        self.assertEqual(result, Fraction(0))
+        self.assertTrue(any("_to_fraction" in msg for msg in cm.output))
+
+    def test_well_formed_value_does_not_log(self):
+        from corvus_cronos.bridge import _to_fraction
+
+        with self.assertNoLogs("qwen_track3.bridge", level="WARNING"):
+            result = _to_fraction(0.5)
+        self.assertEqual(result, Fraction(1, 2))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
