@@ -1,0 +1,9 @@
+# qwen-track3 — CORVUS + CRONOS negotiation engine
+# Qwen Cloud Hackathon 2026, Track 3
+# Apache 2.0 — VIGÍA AI Collective
+
+# Qwen Cloud HTTP client (no openai SDK)
+requests>=2.31.0
+
+# Testing
+pytest>=7.4.0
