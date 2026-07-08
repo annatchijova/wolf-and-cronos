@@ -19,7 +19,7 @@ dev = [
 ]
 
 [project.scripts]
-corvus-demo = "demo:main"
+corvus-demo = "corvus_cronos.bridge:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -29,5 +29,5 @@ python_functions = ["test_*"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["corvus*", "cronos*"]
-exclude = ["tests*"]
+include = ["corvus_cronos*"]
+exclude = ["tests*", "benchmark*", "scripts*"]

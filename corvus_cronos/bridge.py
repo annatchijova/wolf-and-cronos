@@ -78,8 +78,9 @@ log = logging.getLogger("qwen_track3.bridge")
 # ---------------------------------------------------------------------------
 
 _ROOT = os.path.dirname(os.path.abspath(__file__))
+# corvus/ and cronos/ live two levels up: project_root/../corvus etc.
 for _lib in ("corvus", "cronos"):
-    _p = os.path.abspath(os.path.join(_ROOT, "..", _lib))
+    _p = os.path.abspath(os.path.join(_ROOT, "..", "..", _lib))
     if _p not in sys.path:
         sys.path.insert(0, _p)
 

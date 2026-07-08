@@ -15,8 +15,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from bridge import NegotiationResult
-from qwen_client import QwenClient
+from corvus_cronos.bridge import NegotiationResult
+from corvus_cronos.qwen_client import QwenClient
 
 
 # ---------------------------------------------------------------------------

@@ -20,7 +20,7 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-from qwen_client import QwenClient, QWEN_BASE_URL
+from corvus_cronos.qwen_client import QwenClient, QWEN_BASE_URL
 
 
 class TestQwenClientConstants(unittest.TestCase):
@@ -78,15 +78,9 @@ class TestNarratorOffline(unittest.TestCase):
 
     def test_narrator_fallback_returns_string(self):
         import tempfile
-        for _lib in ("corvus", "cronos"):
-            import os as _os
-            _p = _os.path.abspath(_os.path.join(_ROOT, "..", _lib))
-            if _p not in sys.path:
-                sys.path.insert(0, _p)
-
-        from bridge import CorvosCronosBridge
-        from narrator import QwenNarrator
-        from qwen_client import QwenClient
+        from corvus_cronos import CorvosCronosBridge
+        from corvus_cronos.narrator import QwenNarrator
+        from corvus_cronos.qwen_client import QwenClient
 
         with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
             db_path = f.name

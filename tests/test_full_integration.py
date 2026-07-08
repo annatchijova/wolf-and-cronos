@@ -33,7 +33,7 @@ for _lib in ("corvus", "cronos"):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from bridge import CorvosCronosBridge, NegotiationResult, AgentTraceMeta
+from corvus_cronos import CorvosCronosBridge, NegotiationResult, AgentTraceMeta
 
 
 DECEPTIVE_TEXT = (

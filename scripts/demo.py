@@ -23,14 +23,13 @@ import sys
 import tempfile
 
 _ROOT = os.path.dirname(os.path.abspath(__file__))
-for _lib in ("corvus", "cronos"):
-    _p = os.path.abspath(os.path.join(_ROOT, "..", _lib))
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+_PROJECT = os.path.abspath(os.path.join(_ROOT, ".."))
+if _PROJECT not in sys.path:
+    sys.path.insert(0, _PROJECT)
 
-from bridge import CorvosCronosBridge
-from narrator import QwenNarrator
-from qwen_client import QwenClient
+from corvus_cronos import CorvosCronosBridge
+from corvus_cronos.narrator import QwenNarrator
+from corvus_cronos.qwen_client import QwenClient
 
 # ---------------------------------------------------------------------------
 # Default demo text (deliberately multi-vector manipulation)
