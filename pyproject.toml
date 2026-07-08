@@ -18,9 +18,6 @@ dev = [
     "pytest>=7.4.0",
 ]
 
-[project.scripts]
-corvus-demo = "corvus_cronos.bridge:main"
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
