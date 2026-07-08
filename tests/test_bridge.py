@@ -574,9 +574,9 @@ class TestRTConcurrentAnalyze(unittest.TestCase):
             )
 
 
-class TestRT06BaselineReadUnderLock(unittest.TestCase):
+class TestRT09BaselineReadUnderLock(unittest.TestCase):
     """
-    RT-06 — Phase 0's MemoryEngine baseline read must serialize with
+    RT-09 — Phase 0's MemoryEngine baseline read must serialize with
     Phases 7-9's MemoryEngine write via the same _write_lock.
 
     Threat: Phase 0 previously ran unlocked while described as a "read-only
@@ -615,7 +615,7 @@ class TestRT06BaselineReadUnderLock(unittest.TestCase):
             return original(user_id)
 
         self._bridge._memory.get_user_baseline = _spy
-        result = self._bridge.analyze(BENIGN_TEXT, artifact_id="RT06-a", user_id="rt06-user")
+        result = self._bridge.analyze(BENIGN_TEXT, artifact_id="RT09-a", user_id="rt09-user")
 
         self.assertIsInstance(result, NegotiationResult)
         self.assertTrue(
