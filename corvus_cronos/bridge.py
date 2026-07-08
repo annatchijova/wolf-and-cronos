@@ -264,11 +264,13 @@ class CorvosCronosBridge:
         self._l5 = LinguisticsDetector()
         self._l6 = PeirceDetector()
 
-        # Concurrency guard — CRONOS+MemoryEngine writes are not re-entrant.
-        # A single bridge instance shared across threads must serialize Phases
-        # 7-9 (trace writes, chain verify, memory store).  Analysis Phases 1-6
-        # (read-only CORVUS detectors) run without the lock so parallel calls
-        # still benefit from their internal thread pool.
+        # Concurrency guard — CRONOS+MemoryEngine access is not re-entrant.
+        # A single bridge instance shared across threads must serialize any
+        # touch of those two stores: Phase 0 (MemoryEngine baseline read) and
+        # Phases 7-9 (CRONOS trace writes, chain verify, MemoryEngine store).
+        # Phases 1-6 (the CORVUS detectors themselves, pure computation over
+        # the already-resolved baseline) run without the lock so parallel
+        # calls still benefit from their internal thread pool.
         self._write_lock = threading.Lock()
 
         # CORVUS MemoryEngine — optional, disabled when memory_db_path is None
@@ -329,7 +331,11 @@ class CorvosCronosBridge:
         if user_baseline is not None:
             baseline = dict(user_baseline)
         elif self._memory is not None:
-            baseline = self._memory.get_user_baseline(user_id)
+            # Shares the write lock with Phases 7-9: this is a MemoryEngine
+            # read, not a CORVUS detector, and MemoryEngine is not guaranteed
+            # safe against a concurrent store_message() from another thread.
+            with self._write_lock:
+                baseline = self._memory.get_user_baseline(user_id)
         else:
             baseline = {}
 

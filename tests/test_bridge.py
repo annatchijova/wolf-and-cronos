@@ -534,6 +534,56 @@ class TestRTConcurrentAnalyze(unittest.TestCase):
             )
 
 
+class TestRT06BaselineReadUnderLock(unittest.TestCase):
+    """
+    RT-06 — Phase 0's MemoryEngine baseline read must serialize with
+    Phases 7-9's MemoryEngine write via the same _write_lock.
+
+    Threat: Phase 0 previously ran unlocked while described as a "read-only
+    CORVUS detector" phase, but it is actually a MemoryEngine (SQLite-backed)
+    read sharing state with the locked Phase 9 write — a concurrent
+    analyze() call from another thread could race a read against a write.
+
+    Invariant: while get_user_baseline() executes, _write_lock.locked() is True.
+    Mutation caught: removing the `with self._write_lock:` around the Phase 0
+    read makes this assertion fail (locked() would be False).
+    """
+
+    def setUp(self):
+        self._tmpfile = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+        self._db_path = self._tmpfile.name
+        self._tmpfile.close()
+        self._mem_tmpfile = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+        self._mem_db_path = self._mem_tmpfile.name
+        self._mem_tmpfile.close()
+        self._bridge = CorvosCronosBridge(
+            db_path=self._db_path, memory_db_path=self._mem_db_path,
+        )
+
+    def tearDown(self):
+        self._bridge.close()
+        for p in (self._db_path, self._mem_db_path):
+            if os.path.exists(p):
+                os.unlink(p)
+
+    def test_baseline_read_holds_write_lock(self):
+        observed = {"locked": None}
+        original = self._bridge._memory.get_user_baseline
+
+        def _spy(user_id):
+            observed["locked"] = self._bridge._write_lock.locked()
+            return original(user_id)
+
+        self._bridge._memory.get_user_baseline = _spy
+        result = self._bridge.analyze(BENIGN_TEXT, artifact_id="RT06-a", user_id="rt06-user")
+
+        self.assertIsInstance(result, NegotiationResult)
+        self.assertTrue(
+            observed["locked"],
+            "Phase 0 baseline read ran without holding _write_lock",
+        )
+
+
 class TestRT07ToFractionLogsOnCoercionFailure(unittest.TestCase):
     """
     RT-07 — _to_fraction() must log (not silently swallow) when it falls
