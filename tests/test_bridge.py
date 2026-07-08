@@ -435,6 +435,46 @@ class TestRT04ArtifactIdCap(unittest.TestCase):
         self.assertEqual(result.audit_warnings, [])
 
 
+class TestRT08TextCap(unittest.TestCase):
+    """
+    RT-08 — `text`, the highest-attacker-control input, must be bounded
+    the same way RT-04 bounded artifact_id/user_id. Unlike those two IDs,
+    text is what actually runs through all six parallel detector algorithms,
+    making it the more consequential unbounded-size input, per the
+    hostile-input probe table (Size class: 10 MB body / one huge line).
+
+    Mutation caught: removing the `text[:MAX_TEXT_CHARS]` truncation makes
+    the oversized-input case take proportionally longer / risk unbounded
+    memory in the detectors, and this test's length assertion would fail.
+    """
+
+    def setUp(self):
+        self._tmpfile = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+        self._db_path = self._tmpfile.name
+        self._tmpfile.close()
+        self._bridge = CorvosCronosBridge(db_path=self._db_path)
+
+    def tearDown(self):
+        self._bridge.close()
+        if os.path.exists(self._db_path):
+            os.unlink(self._db_path)
+
+    def test_oversized_text_does_not_raise(self):
+        from corvus_cronos.bridge import MAX_TEXT_CHARS
+
+        huge_text = "urgent act now " * (MAX_TEXT_CHARS // 10)
+        result = self._bridge.analyze(huge_text, artifact_id="RT08-a")
+        self.assertIsInstance(result, NegotiationResult)
+
+    def test_oversized_text_is_truncated_before_analysis(self):
+        """analysis_result.text reflects the capped length, not the raw input."""
+        from corvus_cronos.bridge import MAX_TEXT_CHARS
+
+        huge_text = "x" * (MAX_TEXT_CHARS + 10_000)
+        result = self._bridge.analyze(huge_text, artifact_id="RT08-b")
+        self.assertLessEqual(len(result.analysis_result.text), MAX_TEXT_CHARS)
+
+
 # ---------------------------------------------------------------------------
 # Rec-3 — CRONOS write failure surfaced in audit_warnings, not raised
 # ---------------------------------------------------------------------------

@@ -73,6 +73,14 @@ from typing import Optional
 
 log = logging.getLogger("qwen_track3.bridge")
 
+# RT-08: cap the analyzed text itself, not just artifact_id/user_id (RT-04).
+# `text` is the highest-attacker-control input and the one actually run
+# through all six detector algorithms in parallel; unlike artifact_id it
+# had no bound at all. 50k chars is generous for the single-message /
+# short-conversation use case this system targets while bounding worst-case
+# detector CPU/memory and the JSON payload hashed in Phase 5.
+MAX_TEXT_CHARS = 50_000
+
 # ---------------------------------------------------------------------------
 # Resolve CORVUS and CRONOS on sys.path (no install required for the demo)
 # ---------------------------------------------------------------------------
@@ -322,6 +330,8 @@ class CorvosCronosBridge:
         # RT-04: cap artifact_id to prevent unbounded CRONOS objective strings
         artifact_id = str(artifact_id)[:256]
         user_id     = str(user_id)[:128]
+        # RT-08: cap text itself — see MAX_TEXT_CHARS for rationale.
+        text        = str(text)[:MAX_TEXT_CHARS]
 
         ts = datetime.now(tz=timezone.utc).isoformat()
         history = conversation_history or []
