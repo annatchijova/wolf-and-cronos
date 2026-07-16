@@ -22,6 +22,12 @@ if _ROOT not in sys.path:
 
 from corvus_cronos.qwen_client import QwenClient, QWEN_BASE_URL
 
+try:
+    import corvus_cronos.bridge  # noqa: F401 — pulls in CORVUS/CRONOS siblings
+    _BRIDGE_AVAILABLE = True
+except ModuleNotFoundError:
+    _BRIDGE_AVAILABLE = False
+
 
 class TestQwenClientConstants(unittest.TestCase):
 
@@ -66,6 +72,10 @@ class TestQwenClientOffline(unittest.TestCase):
             self.assertIsInstance(c, QwenClient)
 
 
+@unittest.skipUnless(
+    _BRIDGE_AVAILABLE,
+    "CORVUS/CRONOS sibling repos not available — bridge-dependent test skipped",
+)
 class TestNarratorOffline(unittest.TestCase):
     """Narrator fallback when no Qwen key is available."""
 

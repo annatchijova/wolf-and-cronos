@@ -14,9 +14,15 @@ This follows the same architectural invariant as raven-memory and VIGÍA:
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-from corvus_cronos.bridge import NegotiationResult
 from corvus_cronos.qwen_client import QwenClient
+
+if TYPE_CHECKING:
+    # Type-only: importing bridge at runtime would pull in CORVUS/CRONOS,
+    # defeating the package's lazy-load design (see __init__.py) — the
+    # narrator itself only reads plain attributes off the result object.
+    from corvus_cronos.bridge import NegotiationResult
 
 
 # ---------------------------------------------------------------------------
@@ -32,8 +38,14 @@ class NarrationInput:
     rationale:     str
     audit_hash:    str       # first 16 chars for readability
 
+    @property
+    def gate_active_count(self) -> int:
+        """Active agents as the corroboration gate counts them: L1-L5 only.
+        L6 is synthesis and never counts toward the >= 2 threshold."""
+        return sum(1 for a in self.active_agents if a != "L6_PEIRCE")
+
     @classmethod
-    def from_result(cls, result: NegotiationResult) -> "NarrationInput":
+    def from_result(cls, result: "NegotiationResult") -> "NarrationInput":
         return cls(
             verdict_level = result.verdict_level.value,
             score_pct     = int(round(float(result.score) * 100)),
@@ -122,7 +134,7 @@ Agents that voted non-SILENT (filed an anomaly hypothesis):
 Agents that voted SILENT (no anomaly detected):
 {silent_block}
 
-Corroboration gate ({len(ni.active_agents)} active / 5 required >= 2): {gate_outcome}
+Corroboration gate ({ni.gate_active_count} active / 5 required >= 2): {gate_outcome}
 
 Peirce synthesis (Thirdness — inferred pattern):
   {ni.rationale}
@@ -188,7 +200,7 @@ class QwenNarrator:
         )
         lines += [
             "",
-            f"Gate ({len(ni.active_agents)} active agent(s)): {gate_msg}.",
+            f"Gate ({ni.gate_active_count} active agent(s) of 5): {gate_msg}.",
             "",
             f"Interpretation: {ni.rationale}",
             "",

@@ -73,7 +73,7 @@ Each agent operates independently and emits a vote (SILENT / active). The gate:
 
 1. Counts active votes (L1-L5 only; L6 is synthesis).
 2. If `count >= 2`: consensus reached — emits the VerdictEngine result.
-3. If `count < 1`: gate discards all hypotheses — forces SILENT.
+3. If `count < 2`: gate discards all hypotheses — forces SILENT.
 
 CRONOS records every step: which agents voted, what evidence they cited, which hypotheses were discarded by the gate. The SHA-256 chain makes this trace tamper-evident — any post-hoc modification breaks the hash.
 
