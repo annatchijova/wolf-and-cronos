@@ -369,10 +369,16 @@ class CorvosCronosBridge:
         # Phase 4: baseline delta — normalised deviation from user history
         # MemoryEngine stores avg_signals_per_message; explicit baselines may
         # use avg_active_signals (legacy key).  Accept either.
+        # A stored average of exactly 0 (all-silent history) is a legitimate
+        # baseline, distinct from "no baseline" — so test for key presence with
+        # `is None`, never truthiness (an `or` chain would coerce 0 to missing,
+        # the RT-07 defect class).  message_count == 0 means no real history:
+        # keep delta at 0 rather than treating the storage default as a baseline.
         baseline_delta = Fraction(0)
-        avg_raw = baseline.get("avg_signals_per_message") \
-               or baseline.get("avg_active_signals")
-        if avg_raw is not None:
+        avg_raw = baseline.get("avg_signals_per_message")
+        if avg_raw is None:
+            avg_raw = baseline.get("avg_active_signals")
+        if avg_raw is not None and baseline.get("message_count", 1) > 0:
             avg = _to_fraction(avg_raw)
             baseline_delta = Fraction(active_count, 5) - avg
 
@@ -438,14 +444,18 @@ class CorvosCronosBridge:
                     audit_warnings.append(msg)
                     log.error("MemoryEngine store failed: %s", exc)
 
-        # Classify agents
+        # Classify agents.  Iterate in the fixed L1→L5 framework order, not
+        # signals.items() — that dict is filled in thread-completion order, so
+        # the lists (and every prompt/trace string built from them) would vary
+        # run-to-run for identical input.
         crashed_set   = set(crashed)
+        l1_l5_order   = [k for k in self._AGENT_FRAMEWORK if k != "L6_PEIRCE"]
         active_agents = [
-            k for k, v in signals.items() if k != "L6_PEIRCE" and v is not None
+            k for k in l1_l5_order if signals.get(k) is not None
         ]
         silent_agents = [
-            k for k, v in signals.items()
-            if k != "L6_PEIRCE" and v is None and k not in crashed_set
+            k for k in l1_l5_order
+            if signals.get(k) is None and k not in crashed_set
         ]
         if peirce_signal is not None:
             active_agents.append("L6_PEIRCE")
@@ -459,10 +469,6 @@ class CorvosCronosBridge:
             else f"Gate: {active_count}/5 agents active — verdict {verdict.level.value}"
         )
 
-        # Devil's advocate from L6 trace (CRONOS quality module)
-        devil = trace_meta.get("L6_PEIRCE", AgentTraceMeta(
-            quality="EMPTY", diversity="0/3", contradictions=[], confidence_warnings=[],
-        ))
         # Build the devil's advocate prose from the L6 Peirce signal and the
         # per-agent signal map.  See _build_devils_advocate() for the design note.
         devil_prose = self._build_devils_advocate(peirce_signal, signals)
@@ -738,9 +744,11 @@ class CorvosCronosBridge:
         On write failure trace_id is "" and meta is EMPTY.
         """
         threshold    = self._config.CORROBORATION_THRESHOLD
+        # Fixed L1→L5 order (not signals.items()) so the evidence string
+        # recorded in the CRONOS chain is identical across runs.
         active_names = [
-            k for k, v in signals.items()
-            if k != "L6_PEIRCE" and v is not None
+            k for k in self._AGENT_FRAMEWORK
+            if k != "L6_PEIRCE" and signals.get(k) is not None
         ]
         _empty_meta = AgentTraceMeta(
             quality="EMPTY", diversity="0/3", contradictions=[], confidence_warnings=[],

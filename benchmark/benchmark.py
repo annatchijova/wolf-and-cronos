@@ -22,15 +22,10 @@ Run
 
 Output (stdout)
 ---------------
-    === CORVUS multi-agent negotiation benchmark ===
-
-    Corpus: 20 samples (12 deceptive, 8 benign)
-
-    Mode             TP   FP   TN   FN   FPR    FNR    Accuracy
-    BASELINE (L6)     9    4    4    3   50.0%  25.0%   65.0%
-    MULTI-AGENT      10    1    7    2   12.5%  16.7%   85.0%
-
-    FPR reduction: 37.5 pp (75.0% relative improvement)
+    Per-sample marks plus a TP/FP/TN/FN metrics table and the FPR reduction.
+    See README.md ("Benchmark") for the measured results on the built-in
+    corpus — re-run this script to reproduce them; numbers here would go
+    stale (and previously had).
 """
 
 from __future__ import annotations
@@ -178,7 +173,7 @@ def _run_baseline(text: str, bridge_path: str) -> VerdictLevel:
     Any single active agent triggers a non-SILENT verdict.
     This is the "naive single-arbiter" mode — no consensus required.
     """
-    import os
+    prev = os.environ.get("CORROBORATION_THRESHOLD")
     os.environ["CORROBORATION_THRESHOLD"] = "1"
     try:
         bridge = CorvosCronosBridge(db_path=bridge_path)
@@ -186,7 +181,12 @@ def _run_baseline(text: str, bridge_path: str) -> VerdictLevel:
         bridge.close()
         return result.verdict_level
     finally:
-        os.environ["CORROBORATION_THRESHOLD"] = "2"
+        # Restore whatever was there before — hard-coding "2" clobbered any
+        # pre-existing value and leaked the variable when none was set (RT-05).
+        if prev is None:
+            os.environ.pop("CORROBORATION_THRESHOLD", None)
+        else:
+            os.environ["CORROBORATION_THRESHOLD"] = prev
 
 
 def _run_multi(bridge: CorvosCronosBridge, text: str, artifact_id: str) -> VerdictLevel:

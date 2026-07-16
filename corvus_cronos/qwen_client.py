@@ -139,7 +139,13 @@ class QwenClient:
                     time.sleep(delay)
 
         log.error("Qwen API failed after %d attempts: %s", 1 + _API_RETRIES, last_err)
-        return self._offline(user_message)
+        # A key IS configured here — telling the user to set DASHSCOPE_API_KEY
+        # (the offline message) would be misleading. Surface the actual failure.
+        return (
+            f"[QWEN NARRATION UNAVAILABLE — API call failed after "
+            f"{1 + _API_RETRIES} attempts: {last_err}]\n\n"
+            f"Query: {user_message[:200]}"
+        )
 
     @staticmethod
     def _offline(user_message: str) -> str:

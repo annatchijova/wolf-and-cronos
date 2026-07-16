@@ -33,7 +33,13 @@ for _lib in ("corvus", "cronos"):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from corvus_cronos import CorvosCronosBridge, NegotiationResult, AgentTraceMeta
+try:
+    from corvus_cronos import CorvosCronosBridge, NegotiationResult, AgentTraceMeta
+except ModuleNotFoundError as _exc:
+    raise unittest.SkipTest(
+        f"CORVUS/CRONOS sibling repos not available ({_exc}) — "
+        "integration tests skipped; only tests/test_qwen_client.py runs standalone"
+    )
 
 
 DECEPTIVE_TEXT = (
