@@ -9,7 +9,7 @@ PAGE = Path(__file__).resolve().parents[1] / "web" / "index.html"
 def test_landing_page_is_a_bilingual_standalone_static_site():
     page = PAGE.read_text(encoding="utf-8")
 
-    assert '<html lang="es"' in page
+    assert '<html lang="en"' in page
     assert 'data-language="es"' in page
     assert 'data-language="en"' in page
     assert 'data-es=' in page
