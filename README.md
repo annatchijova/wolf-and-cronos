@@ -1,19 +1,58 @@
-# CORVUS + CRONOS — Multi-Agent Rhetorical Negotiation Engine
+# CORVUS + CRONOS — The Wolf Doesn't Get to Whisper Unchallenged
 
 **Qwen Cloud Hackathon 2026 · Track 3: Agentic AI**
 
 ---
 
-## What this is
+## Act 1 — The Wolf
 
-A **multi-agent system** that detects manipulation and social engineering in text through six independent theoretical frameworks. The agents negotiate a verdict via a corroboration gate — no single agent can trigger an alarm alone. The negotiation is permanently auditable via CRONOS, a SHA-256 tamper-evident trace chain.
+> *"Hi Anna! Great meeting you at the audit-tech conference last week. Your talk on tamper-evident logs was excellent."*
+
+Five messages. That's all it takes. Message 1 is pure rapport — nothing to flag, nothing a filter would ever catch. By message 5, the same voice is telling Anna she has two hours to wire a deposit or lose everything, dressed in urgency, guilt, and fear. That's the anatomy of every scam that has ever worked: it never opens with the ask. It opens with trust.
+
+In our demo, `qwen-max` plays the Wolf — a fictional social engineer, red-teaming live, escalating one manipulation layer per message: rapport, flattery, false scarcity + insider secrecy, authority + social proof, urgency + guilt + fear.
+
+## Act 2 — The Watchdogs
+
+A single model reading that conversation might flag message 5 as "suspicious" and stop there — a hunch with no evidence behind it. CORVUS never gets that luxury. Every message is read in parallel by six independent perspectives that don't know or trust each other:
+
+| Watchdog | What it's listening for |
+|---|---|
+| **L1 · Grice** | Violations of conversational cooperation — saying more, or less, than the moment calls for |
+| **L2 · Carnegie** | Cialdini's influence levers — reciprocity, scarcity, authority, social proof |
+| **L3 · Aristotle** | Ethos / Pathos / Logos out of balance — emotion crowding out reason |
+| **L4 · Berne** | Transactional ego states — is this Adult speaking to Adult, or Parent cornering Child? |
+| **L5 · Linguistics** | Register shifts, complexity spikes, Zipf anomalies — the fingerprints of a scripted pitch |
+| **L6 · Peirce** | Abductive synthesis — once the other five report in, what's the simplest explanation that fits everything they saw? |
+
+And here's the rule that makes this different from a paranoid filter: **no single watchdog can raise the alarm alone.** One flag is noise. It takes a corroboration gate — at least two independent frameworks agreeing — before the verdict escalates past silence. By message 5 of the Wolf's script, the gate isn't just triggered, it's unanimous.
+
+## Act 3 — The Narrator, Not the Judge
+
+Once the verdict is sealed, `qwen-plus` is invited in — but only to *narrate*, never to *decide*. It reads the already-sealed evidence and writes the human-readable case, complete with an auto-generated devil's-advocate counter-hypothesis, so the system argues against itself before a verdict is allowed to stand. Swap `qwen-plus` for any other model and the courtroom narration changes tone. The verdict underneath does not move a single bit.
+
+## Act 4 — The Cover-Up
+
+What happens when the wolf has friends on the inside? In the live demo, a second terminal reaches directly into the database and edits the sealed verdict — the way a corrupt insider would. CRONOS's SHA-256 chain notices instantly: *"You can delete the truth. You cannot hide that you deleted it."* Every trace is a link in a chain; break one link, and every link after it screams.
+
+## Act 5 — The Gauntlet
+
+Then we hand the mic to the room. Type anything. Try to sound benign while manipulating, or manipulative while being harmless. The same six watchdogs and the same corroboration gate score it live, with nowhere to hide a thumb on the scale.
+
+`python3 scripts/showcase.py` runs the whole performance end to end, rehearsal-safe by default — add `--live-wolf` to let `qwen-max` write the attack live instead of reciting the script.
+
+---
+
+## What this actually is
+
+Underneath the theater: a **multi-agent system** that detects manipulation and social engineering in text through six independent theoretical frameworks, arbitrated by a corroboration gate — no single agent can trigger an alarm alone — and permanently auditable via CRONOS, a SHA-256 tamper-evident trace chain.
 
 This submission combines two existing systems with **zero modification to their internals**:
 
 - **CORVUS** (90 tests) — the multi-agent analysis engine
 - **CRONOS** (161 tests) — the forensic audit trail
 
-The integration bridge in this repo wraps CORVUS output into CRONOS traces, then calls Qwen to narrate the negotiation for human review.
+The integration bridge in this repo wraps CORVUS output into CRONOS traces, then calls Qwen to narrate — never to judge — the negotiation for human review.
 
 ---
 
