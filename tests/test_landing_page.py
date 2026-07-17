@@ -15,8 +15,7 @@ def test_landing_page_is_a_bilingual_standalone_static_site():
     assert 'data-es=' in page
     assert 'data-en=' in page
     assert "fetch(" not in page
-    for color in ("#74B891", "#B374B8", "#B87479"):
-        assert color in page
+    assert "--ink: #6C5D72" in page
 
 
 def test_landing_page_states_the_actual_architecture_boundaries():
