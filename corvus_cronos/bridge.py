@@ -81,6 +81,27 @@ log = logging.getLogger("qwen_track3.bridge")
 # detector CPU/memory and the JSON payload hashed in Phase 5.
 MAX_TEXT_CHARS = 50_000
 
+# RT-10: cross-message accumulation window.
+#
+# Confirmed by induction (red-team audit, corroboration-gate probe): a
+# "drip-feed" attacker who spreads one manipulation tactic per message —
+# instead of stacking them in a single message, the way the canned Wolf
+# demo does from message 3 onward — never fires >= CORROBORATION_THRESHOLD
+# agents on any single message. A 10-message escalating conversation ran
+# through this exact bridge stayed SILENT on all 10 messages; the system's
+# own baseline_delta multiplier cannot rescue it, because VerdictEngine's
+# gate (corvus/verdict/engine.py Step 1) forces SILENT before baseline_delta
+# is ever consulted. That gate is CORVUS's own code and is intentionally
+# left unmodified (see module docstring: "zero modification to internals").
+#
+# This window is the bridge-owned fix: instead of requiring >= 2 independent
+# frameworks to fire on ONE message, it also accepts >= 2 independent
+# frameworks firing across the last DRIP_WINDOW_SIZE messages from the same
+# user_id. Same corroboration philosophy (no single framework, ever, acting
+# alone), just widened from one message to a short recent window — so a
+# patient attacker gains nothing by pacing tactics one per message.
+DRIP_WINDOW_SIZE = 6
+
 # ---------------------------------------------------------------------------
 # Resolve CORVUS and CRONOS on sys.path (no install required for the demo)
 # ---------------------------------------------------------------------------
@@ -101,7 +122,7 @@ from corvus.analysis.l6_peirce import PeirceDetector
 from corvus.config import Config
 from corvus.memory.engine import MemoryEngine
 from corvus.models import (
-    AnalysisResult, PeirceSignal, VerdictLevel,
+    AnalysisResult, PeirceSignal, Verdict, VerdictLevel,
 )
 from corvus.verdict.engine import VerdictEngine
 
@@ -265,6 +286,26 @@ class CorvosCronosBridge:
         self._config = Config()
         self._engine = VerdictEngine(self._config)
 
+        # RT-10: bridge-owned table for the drip-feed accumulation window.
+        # Lives in the same SQLite file as the CRONOS chain but is a table
+        # the bridge creates and owns — CRONOS's own schema/code is untouched.
+        self._store._conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS bridge_drip_window (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id     TEXT    NOT NULL,
+                artifact_id TEXT    NOT NULL,
+                frameworks  TEXT    NOT NULL,
+                created_at  TEXT    NOT NULL
+            )
+            """
+        )
+        self._store._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_bridge_drip_window_user "
+            "ON bridge_drip_window (user_id, id)"
+        )
+        self._store._conn.commit()
+
         self._l1 = GriceDetector()
         self._l2 = InfluenceDetector()
         self._l3 = AristotleDetector()
@@ -409,6 +450,21 @@ class CorvosCronosBridge:
         )
         verdict = self._engine.compute(analysis_result)
 
+        # RT-10: drip-feed accumulation check. Only relevant when CORVUS's own
+        # gate forced SILENT on this message but the message was not fully
+        # blank (active_count > 0) — a real, if lone, signal fired.
+        accumulation_trace_id: Optional[str] = None
+        accumulation_meta: Optional[AgentTraceMeta] = None
+        if verdict.level == VerdictLevel.SILENT and 0 < active_count < self._config.CORROBORATION_THRESHOLD:
+            with self._write_lock:
+                escalated, accumulation_trace_id, accumulation_meta = (
+                    self._check_drip_accumulation(
+                        user_id, artifact_id, signals, active_count,
+                    )
+                )
+            if escalated is not None:
+                verdict = escalated
+
         # Phases 7-9: serialized write block.
         # CRONOS TraceStore and MemoryEngine are not safe for concurrent writes
         # from multiple threads sharing the same bridge instance.  The lock
@@ -426,6 +482,10 @@ class CorvosCronosBridge:
             trace_ids["GATE"]   = gate_tid
             trace_meta["GATE"]  = gate_meta
             audit_warnings.extend(gate_warn)
+
+            if accumulation_trace_id:
+                trace_ids["ACCUMULATION"]  = accumulation_trace_id
+                trace_meta["ACCUMULATION"] = accumulation_meta
 
             # Phase 8: verify CRONOS chain integrity
             chain_valid, chain_errors = self._store.chain.verify()
@@ -462,12 +522,17 @@ class CorvosCronosBridge:
         else:
             silent_agents.append("L6_PEIRCE")
 
-        # Peirce thirdness as primary rationale; fall back to gate summary
-        rationale = (
-            peirce_signal.thirdness
-            if peirce_signal is not None
-            else f"Gate: {active_count}/5 agents active — verdict {verdict.level.value}"
-        )
+        # Peirce thirdness as primary rationale; fall back to gate summary.
+        # RT-10: an accumulation escalation overrides both — this message
+        # alone did not trigger Peirce synthesis or the single-message gate.
+        if accumulation_trace_id:
+            rationale = verdict.rationale
+        else:
+            rationale = (
+                peirce_signal.thirdness
+                if peirce_signal is not None
+                else f"Gate: {active_count}/5 agents active — verdict {verdict.level.value}"
+            )
 
         # Build the devil's advocate prose from the L6 Peirce signal and the
         # per-agent signal map.  See _build_devils_advocate() for the design note.
@@ -796,6 +861,148 @@ class CorvosCronosBridge:
             msg = f"CRONOS_WRITE_FAILED:GATE:{type(exc).__name__}:{exc}"
             log.error("Rec-3: %s", msg)
             return "", _empty_meta, [msg]
+
+    # ------------------------------------------------------------------
+    # Internal: RT-10 drip-feed accumulation
+    # ------------------------------------------------------------------
+
+    def _check_drip_accumulation(
+        self,
+        user_id: str,
+        artifact_id: str,
+        signals: dict[str, object],
+        active_count: int,
+    ) -> tuple[Optional[Verdict], Optional[str], Optional[AgentTraceMeta]]:
+        """
+        Record this near-miss message's fired L1-L5 frameworks into the
+        user's drip window (bounded to DRIP_WINDOW_SIZE messages), then
+        check whether the UNION of frameworks fired across that window
+        reaches the corroboration threshold — even though no single
+        message in the window did on its own.
+
+        Caller holds self._write_lock. Returns (verdict, trace_id, meta),
+        all None if no escalation occurred.
+        """
+        fired = sorted(
+            k for k in self._AGENT_FRAMEWORK
+            if k != "L6_PEIRCE" and signals.get(k) is not None
+        )
+        conn = self._store._conn
+        conn.execute(
+            "INSERT INTO bridge_drip_window (user_id, artifact_id, frameworks, created_at) "
+            "VALUES (?, ?, ?, ?)",
+            (user_id, artifact_id, ",".join(fired),
+             datetime.now(tz=timezone.utc).isoformat()),
+        )
+        # Prune to the last DRIP_WINDOW_SIZE rows for this user.
+        conn.execute(
+            """
+            DELETE FROM bridge_drip_window
+            WHERE user_id = ? AND id NOT IN (
+                SELECT id FROM bridge_drip_window WHERE user_id = ?
+                ORDER BY id DESC LIMIT ?
+            )
+            """,
+            (user_id, user_id, DRIP_WINDOW_SIZE),
+        )
+        conn.commit()
+
+        rows = conn.execute(
+            "SELECT artifact_id, frameworks FROM bridge_drip_window "
+            "WHERE user_id = ? ORDER BY id",
+            (user_id,),
+        ).fetchall()
+
+        union: set[str] = set()
+        contributing: list[tuple[str, list[str]]] = []
+        for aid, fw_str in rows:
+            fws = [f for f in fw_str.split(",") if f]
+            if fws:
+                union.update(fws)
+                contributing.append((aid, fws))
+
+        threshold = self._config.CORROBORATION_THRESHOLD
+        if len(union) < threshold:
+            return None, None, None
+
+        # Escalate. Clear the window so the next escalation needs fresh
+        # evidence — prevents one crossing from re-triggering on every
+        # subsequent silent message (RT-10 unbounded-repeat guard).
+        conn.execute("DELETE FROM bridge_drip_window WHERE user_id = ?", (user_id,))
+        conn.commit()
+
+        frameworks_str = ", ".join(sorted(union))
+        messages_str = ", ".join(aid for aid, _ in contributing)
+        rationale = (
+            f"RT-10 cross-message accumulation: no single message fired "
+            f">= {threshold} frameworks, but {len(union)} independent "
+            f"frameworks ({frameworks_str}) fired across {len(contributing)} "
+            f"recent messages from this user ({messages_str}), within a "
+            f"{DRIP_WINDOW_SIZE}-message window."
+        )
+        audit_payload = f"ACCUMULATION|{user_id}|{frameworks_str}|{messages_str}"
+        audit_hash = hashlib.sha256(audit_payload.encode()).hexdigest()
+
+        verdict = Verdict(
+            level=VerdictLevel.WATCH,
+            score=self._config.WATCH_THRESHOLD,
+            rationale=rationale,
+            signals_fired=sorted(union),
+            recommendation=(
+                "Monitor this user's subsequent messages. Escalated via "
+                "cross-message accumulation (RT-10), not a single-message trigger — "
+                "no individual message crossed the corroboration threshold alone."
+            ),
+            audit_hash=audit_hash,
+        )
+
+        trace_id, trace_meta = self._trace_accumulation(
+            user_id, artifact_id, union, contributing, threshold,
+        )
+        return verdict, trace_id, trace_meta
+
+    def _trace_accumulation(
+        self,
+        user_id: str,
+        artifact_id: str,
+        union: set[str],
+        contributing: list[tuple[str, list[str]]],
+        threshold: int,
+    ) -> tuple[str, AgentTraceMeta]:
+        """Open a CRONOS trace recording the accumulation escalation itself,
+        so the exception path is exactly as auditable as the normal gate."""
+        _empty_meta = AgentTraceMeta(
+            quality="EMPTY", diversity="0/3", contradictions=[], confidence_warnings=[],
+        )
+        try:
+            tracer = CronosTracer(
+                self._store,
+                agent_id   = "ACCUMULATION",
+                channel_id = artifact_id,
+                user_id    = user_id,
+                objective  = (
+                    f"Cross-message accumulation: require >= {threshold} independent "
+                    f"frameworks across the last {DRIP_WINDOW_SIZE} messages from "
+                    f"this user when no single message met the gate alone"
+                ),
+            )
+            with tracer as t:
+                tid = t.trace.trace_id
+                t.add_hypothesis(
+                    "drip_feed_pattern",
+                    f"{len(union)} independent frameworks fired across "
+                    f"{len(contributing)} recent messages from {user_id}",
+                )
+                for aid, fws in contributing:
+                    t.add_evidence(
+                        f"{aid}: {', '.join(fws)}",
+                        supports="drip_feed_pattern",
+                    )
+                t.decide("WATCH", confidence=Fraction(1, 2))
+            return tid, AgentTraceMeta(**_trace_meta_from(tracer))
+        except Exception as exc:
+            log.error("Rec-3: CRONOS_WRITE_FAILED:ACCUMULATION:%s:%s", type(exc).__name__, exc)
+            return "", _empty_meta
 
     # ------------------------------------------------------------------
     # Internal: devil's advocate prose

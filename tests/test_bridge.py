@@ -665,5 +665,123 @@ class TestRT07ToFractionLogsOnCoercionFailure(unittest.TestCase):
         self.assertEqual(result, Fraction(1, 2))
 
 
+class TestRT10DripAccumulation(unittest.TestCase):
+    """
+    RT-10: confirmed by induction (red-team audit) that a drip-feed attacker
+    — one manipulation tactic per message, never >= CORROBORATION_THRESHOLD
+    frameworks in a single message — stayed SILENT across a full 10-message
+    escalating conversation, with no cross-message mechanism to catch it.
+    The bridge-owned accumulation window (bridge.py DRIP_WINDOW_SIZE) is the
+    fix: same >= threshold philosophy, widened from one message to a short
+    recent window per user. CORVUS's own VerdictEngine is untouched.
+    """
+
+    def setUp(self):
+        self._tmpfile = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+        self._db_path = self._tmpfile.name
+        self._tmpfile.close()
+        self._bridge = CorvosCronosBridge(db_path=self._db_path)
+
+    def tearDown(self):
+        self._bridge.close()
+        if os.path.exists(self._db_path):
+            os.unlink(self._db_path)
+
+    def test_drip_feed_conversation_eventually_escalates(self):
+        """The exact attack the audit found: one tactic per message, never
+        crossing the single-message gate. Must escalate to WATCH before the
+        window closes, via ACCUMULATION, not the ordinary GATE trace."""
+        drip = [
+            "Hi! Great to connect.",
+            "Only 2 spots left in this round, by the way.",
+            "As someone with 15 years in this space, trust me on this one.",
+            "You're honestly the sharpest person I've worked with.",
+            "Everyone else already committed to this.",
+            "This closes in a few hours, just so you know.",
+        ]
+        history: list[str] = []
+        escalated = False
+        for i, msg in enumerate(drip, 1):
+            r = self._bridge.analyze(
+                msg, artifact_id=f"DRIP-{i:02d}", user_id="drip-victim",
+                conversation_history=list(history),
+            )
+            history.append(msg)
+            if "ACCUMULATION" in r.trace_ids:
+                escalated = True
+                self.assertEqual(r.verdict_level, VerdictLevel.WATCH)
+                self.assertIsInstance(r.score, Fraction)
+                self.assertIn("cross-message accumulation", r.rationale)
+                break
+        self.assertTrue(escalated, "drip-feed conversation never escalated")
+
+    def test_single_near_miss_message_alone_does_not_escalate(self):
+        """One lone near-miss message (verified to fire exactly 1/5 in
+        isolation) must NOT escalate by itself — the whole point is that it
+        takes independent corroboration, just spread across messages
+        instead of confined to one."""
+        r = self._bridge.analyze(
+            "Wire the money now.", artifact_id="SOLO-01", user_id="solo-user",
+        )
+        active = [a for a in r.active_agents if a != "L6_PEIRCE"]
+        self.assertEqual(len(active), 1, f"expected exactly 1/5, got {active}")
+        self.assertNotIn("ACCUMULATION", r.trace_ids)
+        self.assertEqual(r.verdict_level, VerdictLevel.SILENT)
+
+    def test_benign_conversation_never_escalates(self):
+        """Sanity check against false positives: ordinary back-and-forth
+        chat must never trigger accumulation escalation."""
+        benign = [
+            "Hey, can you review my PR when you get a chance?",
+            "Sure, I'll take a look this afternoon.",
+            "Thanks! Let me know if anything's unclear.",
+            "The tests are passing locally, should be good.",
+            "Great, merging now.",
+            "Appreciate it, have a good one.",
+            "You too, see you tomorrow.",
+            "Quick question about the deploy script.",
+        ]
+        history: list[str] = []
+        for i, msg in enumerate(benign, 1):
+            r = self._bridge.analyze(
+                msg, artifact_id=f"BENIGN-{i:02d}", user_id="coworker",
+                conversation_history=list(history),
+            )
+            history.append(msg)
+            self.assertEqual(
+                r.verdict_level, VerdictLevel.SILENT,
+                f"false positive at message {i}: {r.rationale}",
+            )
+
+    def test_escalation_clears_window_no_immediate_repeat(self):
+        """After an escalation fires, the window resets — the next silent
+        message must not ride on stale evidence from before the reset.
+        Sequence and firing pattern verified empirically against this
+        bridge before asserting on it (L2_CARNEGIE depends on conversation
+        context, not just the isolated message text, so message order and
+        history matter — see audit note)."""
+        drip = [
+            "Hi! Great to connect.",
+            "Only 2 spots left in this round, by the way.",
+            "As someone with 15 years in this space, trust me on this one.",   # L2_CARNEGIE
+            "You're honestly the sharpest person I've worked with.",
+            "Everyone else already committed to this.",                       # L1_GRICE -> escalates
+            "This closes in a few hours, just so you know.",                  # silent, post-reset
+        ]
+        history: list[str] = []
+        escalations: list[bool] = []
+        for i, msg in enumerate(drip, 1):
+            r = self._bridge.analyze(
+                msg, artifact_id=f"REPEAT-{i:02d}", user_id="repeat-user",
+                conversation_history=list(history),
+            )
+            history.append(msg)
+            escalations.append("ACCUMULATION" in r.trace_ids)
+        self.assertEqual(
+            escalations, [False, False, False, False, True, False],
+            f"unexpected escalation pattern: {escalations}",
+        )
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
