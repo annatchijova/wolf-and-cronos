@@ -3,14 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CORVUS × CRONOS — Live Console</title>
+<title>CORVUS × CRONOS — Demo</title>
 <style>
   /* ── Qwen palette: indigo → violet → fuchsia ─────────────────────── */
   :root {
     --bg0: #0a0618;
     --bg1: #140b30;
     --panel: rgba(32, 22, 66, .58);
-    --panel-solid: #1a1140;
     --line: rgba(167, 139, 250, .22);
     --line-strong: rgba(167, 139, 250, .45);
     --ink: #f3f0ff;
@@ -48,8 +47,7 @@
   }
   main { position: relative; width: min(96vw, 1780px); margin: 0 auto; padding: 34px 24px 70px; }
 
-  /* ── Header ──────────────────────────────────────────────────────── */
-  header { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-bottom: 26px; }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-bottom: 18px; }
   .mark {
     width: 56px; height: 56px; border-radius: 16px; background: var(--grad);
     display: grid; place-items: center; font-weight: 800; font-size: 20px;
@@ -74,18 +72,24 @@
       var(--grad) border-box;
   }
   .pill.qwen b { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  #conn.ok  { color: var(--ok);       border-color: rgba(74, 222, 128, .45); }
-  #conn.bad { color: var(--critical); border-color: rgba(244, 63, 94, .45); }
 
   .langs { display: flex; gap: 4px; border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
   .langs button {
     background: transparent; border: none; box-shadow: none; color: var(--muted);
-    font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 999px;
+    font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 999px; cursor: pointer;
+    font-family: inherit;
   }
-  .langs button:hover { color: var(--ink); transform: none; }
+  .langs button:hover { color: var(--ink); }
   .langs button.on { background: var(--grad); color: #fff; }
 
-  /* ── Layout ──────────────────────────────────────────────────────── */
+  .banner {
+    display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center;
+    border: 1px solid rgba(251, 191, 36, .35); border-radius: 12px;
+    background: rgba(251, 191, 36, .07); color: var(--watch);
+    padding: 10px 16px; margin-bottom: 22px; font-size: clamp(12.5px, 0.4vw + 10px, 15px);
+  }
+  .banner a { color: var(--lavender); }
+
   .grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 24px; }
   @media (max-width: 940px) { .grid { grid-template-columns: 1fr; } }
 
@@ -108,63 +112,34 @@
   }
   .panel h2 small { color: var(--muted); font-weight: 400; letter-spacing: .05em; text-transform: none; }
 
-  /* ── Inputs ──────────────────────────────────────────────────────── */
-  textarea, input, select {
-    background: rgba(10, 6, 26, .85);
-    color: var(--ink);
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    padding: 10px 13px;
-    font: inherit;
-    transition: border-color .18s, box-shadow .18s;
+  .msgbox {
+    background: rgba(10, 6, 26, .85); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 16px; min-height: 96px; line-height: 1.55;
+    font-size: clamp(13.5px, 0.45vw + 10px, 16.5px); white-space: pre-wrap;
   }
-  textarea { width: 100%; min-height: clamp(118px, 16vh, 190px); resize: vertical; line-height: 1.55; }
-  textarea:focus, input:focus, select:focus {
-    outline: none; border-color: var(--violet);
-    box-shadow: 0 0 0 3px rgba(168, 85, 247, .18);
-  }
-  ::placeholder { color: #5e5a86; }
-  .row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; align-items: center; }
-  input#userId { width: 132px; }
-  input#apiBase { width: 220px; }
-  input#apiToken { width: 175px; }
-  label.chk { color: var(--muted); font-size: 13px; display: flex; gap: 7px; align-items: center; cursor: pointer; }
-  label.chk input { accent-color: var(--violet); }
+  .msgmeta { margin-top: 6px; color: var(--muted); font-size: 12px;
+    font-family: ui-monospace, Consolas, monospace; }
 
-  /* ── Buttons ─────────────────────────────────────────────────────── */
-  button {
-    cursor: pointer; font: inherit; font-weight: 600; letter-spacing: .04em;
-    border-radius: 12px; border: none; padding: 10px 22px;
-    background: var(--grad); color: #fff;
-    box-shadow: 0 4px 18px rgba(168, 85, 247, .35);
-    transition: transform .15s, box-shadow .15s, opacity .15s;
-  }
-  button:hover { transform: translateY(-1px); box-shadow: 0 8px 26px rgba(168, 85, 247, .5); }
-  button:active { transform: translateY(0); }
-  button:disabled { opacity: .5; cursor: wait; transform: none; }
-  button.ghost {
-    background: rgba(97, 92, 237, .08); color: var(--lavender);
-    border: 1px solid var(--line); box-shadow: none; font-weight: 500;
-  }
-  button.ghost:hover { border-color: var(--line-strong); color: var(--ink); transform: none; }
-
-  /* ── Wolf escalation chips ───────────────────────────────────────── */
   .wolfhead { margin: 18px 0 8px; font-size: 11px; letter-spacing: .18em;
     text-transform: uppercase; color: var(--muted); }
-  .wolfchips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .wolfchips button {
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chips button {
+    cursor: pointer; font-family: inherit;
     font-size: clamp(12px, 0.4vw + 9px, 15px); padding: 7px 15px; font-weight: 500;
     background: rgba(97, 92, 237, .08); color: var(--lavender);
-    border: 1px solid var(--line); box-shadow: none;
+    border: 1px solid var(--line); border-radius: 12px;
+    transition: border-color .15s, color .15s;
   }
-  .wolfchips button b {
+  .chips button b {
     display: inline-grid; place-items: center; width: 18px; height: 18px;
     margin-right: 7px; border-radius: 50%; font-size: 10.5px; color: #fff;
     vertical-align: -3px;
   }
-  .wolfchips button:hover { border-color: var(--line-strong); transform: none; color: var(--ink); }
+  .chips button:hover { border-color: var(--line-strong); color: var(--ink); }
+  .chips button.on { border-color: var(--fuchsia); color: var(--ink);
+    box-shadow: 0 0 14px rgba(217, 70, 239, .25); }
 
-  /* ── Verdict ─────────────────────────────────────────────────────── */
   .verdictrow { display: flex; align-items: center; gap: 16px; margin-top: 22px; flex-wrap: wrap; }
   .vbadge {
     padding: 10px 30px; border-radius: 999px; font-weight: 800;
@@ -206,7 +181,6 @@
   .scorebar i {
     display: block; height: 100%; width: 0;
     background: linear-gradient(90deg, var(--indigo), var(--violet), var(--fuchsia), var(--critical));
-    background-size: 400px 100%;
     transition: width .6s cubic-bezier(.3, .9, .3, 1);
   }
   .tick { position: absolute; top: -4px; bottom: -4px; width: 1.5px;
@@ -218,7 +192,6 @@
   .scoreline { display: flex; justify-content: space-between; color: var(--muted);
     font-size: 11px; margin-top: 6px; font-family: ui-monospace, Consolas, monospace; }
 
-  /* ── Agent grid ──────────────────────────────────────────────────── */
   .agents { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
   @media (max-width: 620px) { .agents { grid-template-columns: repeat(2, 1fr); } }
   .agent {
@@ -242,7 +215,6 @@
   .agent.fired .txt b { color: var(--ink); }
   .agent.fired .txt span { color: var(--lavender); }
 
-  /* ── Text blocks ─────────────────────────────────────────────────── */
   .block { margin-top: 20px; font-size: clamp(13.5px, 0.45vw + 10px, 16.5px); }
   .block h3 {
     margin: 0 0 6px; font-size: clamp(10.5px, 0.35vw + 8px, 13px); letter-spacing: .18em;
@@ -261,12 +233,10 @@
   .mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
     font-size: 11.5px; word-break: break-all; color: var(--lavender); }
 
-  /* ── Chain panel ─────────────────────────────────────────────────── */
   .chainstate { display: flex; align-items: center; gap: 11px; margin-bottom: 16px; }
   .lamp { width: 13px; height: 13px; border-radius: 50%; background: #453e75; flex: none; }
   .lamp.ok  { background: var(--ok);       box-shadow: 0 0 14px rgba(74, 222, 128, .8); }
-  .lamp.bad { background: var(--critical); box-shadow: 0 0 14px rgba(244, 63, 94, .8);
-    animation: pulse 1.2s infinite; }
+  .lamp.bad { background: var(--critical); box-shadow: 0 0 14px rgba(244, 63, 94, .8); }
   #chainText { font-size: 13px; color: var(--lavender); }
 
   .blocks { display: flex; align-items: center; gap: 0; overflow-x: auto;
@@ -301,7 +271,6 @@
   .footer { margin-top: 30px; color: var(--muted); font-size: 12.5px; text-align: center; }
   .footer b { background: var(--grad); -webkit-background-clip: text;
     background-clip: text; color: transparent; font-weight: 700; }
-  .err { color: var(--critical); font-size: 13px; margin-top: 12px; white-space: pre-wrap; }
   .hidden { display: none; }
 
   #result { animation: rise .45s ease; }
@@ -323,29 +292,25 @@
         <button data-lang="zh">中文</button>
       </div>
       <span class="pill qwen"><span data-i18n="narratedBy"></span> <b>Qwen</b> · DashScope</span>
-      <span class="pill" id="conn"></span>
     </div>
   </header>
 
+  <div class="banner">
+    <span data-i18n="banner"></span>
+    <a href="https://github.com/annatchijova/corvus-cronos-bridge" target="_blank" rel="noopener" data-i18n="runLive"></a>
+  </div>
+
   <div class="grid">
-    <!-- ── Left: analyze ─────────────────────────────────────────── -->
+    <!-- ── Left: message + verdict ───────────────────────────────── -->
     <section class="panel">
-      <h2><span data-i18n="analyzeTitle"></span> <small data-i18n="analyzeSub"></small></h2>
-      <textarea id="text"></textarea>
-      <div class="row">
-        <input id="userId" value="gauntlet" data-i18n-title="userIdTitle">
-        <select id="lang" data-i18n-title="narrLangTitle">
-          <option value="en">EN narration</option>
-          <option value="es" selected>ES narración</option>
-          <option value="zh">ZH 叙述</option>
-        </select>
-        <label class="chk"><input type="checkbox" id="narrate" checked> <span data-i18n="narrChk"></span></label>
-        <button id="send" data-i18n="analyzeBtn"></button>
-      </div>
+      <h2><span data-i18n="msgTitle"></span> <small data-i18n="msgSub"></small></h2>
+      <div class="msgbox" id="msgText"></div>
+      <div class="msgmeta" id="msgMeta"></div>
 
       <div class="wolfhead" data-i18n="wolfHead"></div>
-      <div class="wolfchips" id="wolf"></div>
-      <div class="err hidden" id="error"></div>
+      <div class="chips" id="wolfChips"></div>
+      <div class="wolfhead" data-i18n="gauntletHead"></div>
+      <div class="chips" id="gauntletChips"></div>
 
       <div id="result" class="hidden">
         <div class="verdictrow">
@@ -372,29 +337,22 @@
       </div>
     </section>
 
-    <!-- ── Right: chain ──────────────────────────────────────────── -->
+    <!-- ── Right: chain snapshot ─────────────────────────────────── -->
     <section class="panel">
       <h2><span data-i18n="chainTitle"></span> <small data-i18n="chainSub"></small></h2>
       <div class="chainstate">
         <span class="lamp" id="chainLamp"></span>
         <span id="chainText"></span>
-        <button class="ghost" id="reverify" style="margin-left:auto" data-i18n="verifyBtn"></button>
       </div>
       <div class="blocks" id="blocks"></div>
       <div class="traces" id="traceRows"></div>
-
-      <h2 style="margin-top:26px" data-i18n="connTitle"></h2>
-      <div class="row" style="margin-top:0">
-        <input id="apiBase" data-i18n-ph="apiBasePh">
-        <input id="apiToken" data-i18n-ph="apiTokenPh" type="password">
-        <button class="ghost" id="reconnect" data-i18n="connectBtn"></button>
-      </div>
     </section>
   </div>
 
   <div class="footer" id="footerLine"></div>
 </main>
 
+<script src="demo-data.js"></script>
 <script>
 "use strict";
 
@@ -403,19 +361,12 @@ const I18N = {
   en: {
     sub: "Six frameworks read every message. No single one can raise the alarm alone.",
     narratedBy: "narrated by",
-    analyzeTitle: "Analyze a message",
-    analyzeSub: "— the verdict seals before any model speaks",
-    placeholder: "Paste any message. Try to sound benign while manipulating — or manipulative while harmless. Six independent frameworks read it in parallel; a corroboration gate demands at least two agree before anything escalates.",
-    userIdTitle: "user_id — baselines and the drip-feed window are per user",
-    narrLangTitle: "narration language",
-    narrChk: "Qwen narration",
-    analyzeBtn: "Analyze", analyzing: "Analyzing…",
-    wolfHead: "The Wolf — replay the five-message escalation",
-    wolfLabels: ["rapport", "flattery", "scarcity + secrecy", "authority + proof", "urgency + guilt"],
-    agentDescs: { L1_GRICE: "cooperative maxims", L2_CARNEGIE: "Carnegie + Cialdini",
-      L3_ARISTOTLE: "ethos / pathos / logos", L4_BERNE: "ego states",
-      L5_LINGUISTIC: "register + load", L6_PEIRCE: "abductive synthesis" },
-    fired: "FIRED — ",
+    banner: "Static demo — every verdict, hash, and trace below was precomputed by the real engine. Nothing is invented.",
+    runLive: "Run it live: clone the repo",
+    msgTitle: "The message under analysis",
+    msgSub: "— pick a sample below",
+    wolfHead: "The Wolf — a five-message escalation, one tactic at a time",
+    gauntletHead: "The Gauntlet — three more samples",
     score: "score", exact: "exact",
     noFloats: "Fraction-exact — no floats in the sealed path",
     reco: "Recommendation",
@@ -423,36 +374,27 @@ const I18N = {
     narrTitle: "Qwen narration", narrNone: "narration not requested",
     custody: "Chain of custody",
     tracesSealed: "traces sealed this analysis",
-    chainTitle: "CRONOS chain", chainSub: "— tamper-evident, SHA-256 linked",
-    notVerified: "not verified yet", verifyBtn: "Verify",
+    chainTitle: "CRONOS chain", chainSub: "— snapshot after this analysis",
     chainOk: "chain verified — every hash links",
-    chainBroken: "CHAIN BROKEN: ", verifyFail: "verify failed — ",
-    chainEmpty: "chain is empty — analyze something",
+    chainBroken: "CHAIN BROKEN: ",
     confTitle: "stored confidence (Fraction-exact)",
-    connTitle: "Connection",
-    apiBasePh: "API base (default: this origin)", apiTokenPh: "X-API-Token (if required)",
-    connectBtn: "Connect", connecting: "connecting…",
-    connOk: (h) => `API ok · narration ${h.qwen_narration} · auth ${h.auth}`,
-    connBad: "API unreachable — ", analyzeFail: "Analyze failed: ",
+    fired: "FIRED — ",
+    agentDescs: { L1_GRICE: "cooperative maxims", L2_CARNEGIE: "Carnegie + Cialdini",
+      L3_ARISTOTLE: "ethos / pathos / logos", L4_BERNE: "ego states",
+      L5_LINGUISTIC: "register + load", L6_PEIRCE: "abductive synthesis" },
+    userLabel: "user",
     footer: 'The verdict is sealed by the deterministic engine <b>before</b> any model is called. Swap the narrator — the verdict does not move a single bit.',
     chainValid: "VALID", chainBrokenWord: "BROKEN",
   },
   es: {
     sub: "Seis marcos teóricos leen cada mensaje. Ninguno puede dar la alarma solo.",
     narratedBy: "narrado por",
-    analyzeTitle: "Analizar un mensaje",
-    analyzeSub: "— el veredicto se sella antes de que hable ningún modelo",
-    placeholder: "Pegá cualquier mensaje. Intentá sonar benigno mientras manipulás — o manipulador siendo inofensivo. Seis marcos independientes lo leen en paralelo; la puerta de corroboración exige que al menos dos coincidan antes de escalar nada.",
-    userIdTitle: "user_id — las líneas base y la ventana anti goteo son por usuario",
-    narrLangTitle: "idioma de la narración",
-    narrChk: "Narración Qwen",
-    analyzeBtn: "Analizar", analyzing: "Analizando…",
-    wolfHead: "El Lobo — reproducí la escalada de cinco mensajes",
-    wolfLabels: ["rapport", "halago", "escasez + secreto", "autoridad + prueba social", "urgencia + culpa"],
-    agentDescs: { L1_GRICE: "máximas cooperativas", L2_CARNEGIE: "Carnegie + Cialdini",
-      L3_ARISTOTLE: "ethos / pathos / logos", L4_BERNE: "estados del yo",
-      L5_LINGUISTIC: "registro + carga", L6_PEIRCE: "síntesis abductiva" },
-    fired: "DISPARÓ — ",
+    banner: "Demo estática — cada veredicto, hash y traza de abajo fue precomputado por el motor real. Nada está inventado.",
+    runLive: "Corrélo en vivo: cloná el repo",
+    msgTitle: "El mensaje bajo análisis",
+    msgSub: "— elegí una muestra abajo",
+    wolfHead: "El Lobo — una escalada de cinco mensajes, una táctica por vez",
+    gauntletHead: "La Prueba — tres muestras más",
     score: "puntaje", exact: "exacto",
     noFloats: "Fracción exacta — cero floats en el camino sellado",
     reco: "Recomendación",
@@ -460,36 +402,27 @@ const I18N = {
     narrTitle: "Narración Qwen", narrNone: "narración no solicitada",
     custody: "Cadena de custodia",
     tracesSealed: "trazas selladas en este análisis",
-    chainTitle: "Cadena CRONOS", chainSub: "— a prueba de adulteración, enlazada por SHA-256",
-    notVerified: "aún sin verificar", verifyBtn: "Verificar",
+    chainTitle: "Cadena CRONOS", chainSub: "— foto posterior a este análisis",
     chainOk: "cadena verificada — todos los hashes enlazan",
-    chainBroken: "CADENA ROTA: ", verifyFail: "verificación falló — ",
-    chainEmpty: "la cadena está vacía — analizá algo",
+    chainBroken: "CADENA ROTA: ",
     confTitle: "confianza almacenada (fracción exacta)",
-    connTitle: "Conexión",
-    apiBasePh: "Base de la API (por defecto: este origen)", apiTokenPh: "X-API-Token (si se requiere)",
-    connectBtn: "Conectar", connecting: "conectando…",
-    connOk: (h) => `API ok · narración ${h.qwen_narration === "configured" ? "configurada" : "offline"} · auth ${h.auth === "open" ? "abierta" : "token"}`,
-    connBad: "API inalcanzable — ", analyzeFail: "El análisis falló: ",
+    fired: "DISPARÓ — ",
+    agentDescs: { L1_GRICE: "máximas cooperativas", L2_CARNEGIE: "Carnegie + Cialdini",
+      L3_ARISTOTLE: "ethos / pathos / logos", L4_BERNE: "estados del yo",
+      L5_LINGUISTIC: "registro + carga", L6_PEIRCE: "síntesis abductiva" },
+    userLabel: "usuario",
     footer: 'El veredicto lo sella el motor determinista <b>antes</b> de llamar a ningún modelo. Cambiá el narrador — el veredicto no se mueve ni un bit.',
     chainValid: "VÁLIDA", chainBrokenWord: "ROTA",
   },
   zh: {
     sub: "六个理论框架同时阅读每条消息，任何单一框架都无法独自发出警报。",
     narratedBy: "叙述引擎",
-    analyzeTitle: "分析一条消息",
-    analyzeSub: "— 裁决在任何模型开口之前就已密封",
-    placeholder: "粘贴任意消息。试着在操纵时显得无害，或在无害时显得像操纵。六个独立框架并行分析；协作门要求至少两个框架一致才会升级警报。",
-    userIdTitle: "user_id — 行为基线和滴灌窗口按用户区分",
-    narrLangTitle: "叙述语言",
-    narrChk: "Qwen 叙述",
-    analyzeBtn: "分析", analyzing: "分析中…",
-    wolfHead: "狼的剧本 — 重放五条消息的升级攻击",
-    wolfLabels: ["建立关系", "奉承", "稀缺 + 保密", "权威 + 社会认同", "紧迫 + 内疚"],
-    agentDescs: { L1_GRICE: "合作原则准则", L2_CARNEGIE: "卡内基 + 西奥迪尼",
-      L3_ARISTOTLE: "情理逻三诉求", L4_BERNE: "自我状态",
-      L5_LINGUISTIC: "语域 + 认知负荷", L6_PEIRCE: "溯因综合" },
-    fired: "触发 — ",
+    banner: "静态演示 — 以下每个裁决、哈希与追踪均由真实引擎预先计算，绝无虚构。",
+    runLive: "在本地运行：克隆仓库",
+    msgTitle: "待分析的消息",
+    msgSub: "— 在下方选择一个样本",
+    wolfHead: "狼的剧本 — 五条消息的升级攻击，每条一个话术",
+    gauntletHead: "试炼场 — 另外三个样本",
     score: "得分", exact: "精确值",
     noFloats: "精确分数 — 密封路径中没有浮点数",
     reco: "处置建议",
@@ -497,17 +430,15 @@ const I18N = {
     narrTitle: "Qwen 叙述", narrNone: "未请求叙述",
     custody: "证据链",
     tracesSealed: "条追踪已在本次分析中密封",
-    chainTitle: "CRONOS 链", chainSub: "— 防篡改，SHA-256 链接",
-    notVerified: "尚未验证", verifyBtn: "验证",
+    chainTitle: "CRONOS 链", chainSub: "— 本次分析后的快照",
     chainOk: "链已验证 — 每个哈希均正确链接",
-    chainBroken: "链已断裂：", verifyFail: "验证失败 — ",
-    chainEmpty: "链为空 — 先分析一条消息",
+    chainBroken: "链已断裂：",
     confTitle: "存储的置信度（精确分数）",
-    connTitle: "连接",
-    apiBasePh: "API 地址（默认：当前源）", apiTokenPh: "X-API-Token（如需要）",
-    connectBtn: "连接", connecting: "连接中…",
-    connOk: (h) => `API 正常 · 叙述 ${h.qwen_narration === "configured" ? "已配置" : "离线"} · 认证 ${h.auth === "open" ? "开放" : "令牌"}`,
-    connBad: "无法访问 API — ", analyzeFail: "分析失败：",
+    fired: "触发 — ",
+    agentDescs: { L1_GRICE: "合作原则准则", L2_CARNEGIE: "卡内基 + 西奥迪尼",
+      L3_ARISTOTLE: "情理逻三诉求", L4_BERNE: "自我状态",
+      L5_LINGUISTIC: "语域 + 认知负荷", L6_PEIRCE: "溯因综合" },
+    userLabel: "用户",
     footer: '裁决由确定性引擎在调用任何模型<b>之前</b>密封。更换叙述模型 — 裁决一位都不会改变。',
     chainValid: "有效", chainBrokenWord: "断裂",
   },
@@ -516,16 +447,7 @@ const I18N = {
 let LANG = localStorage.getItem("ccx_lang") || "en";
 const T = () => I18N[LANG];
 
-/* ── The Wolf's canned escalation (same as scripts/showcase.py) ───────── */
-const WOLF_TEXTS = [
-  "Hi Anna! Great meeting you at the audit-tech conference last week. Your talk on tamper-evident logs was excellent. Would love to stay in touch.",
-  "You're honestly one of the very few people who truly understands this space. That's exactly why I thought of you first for something special.",
-  "Between us — there's a private allocation round closing soon. Only insiders know about it. I can get you in, but you'd have to move quickly before it's shut down.",
-  "I've been advising funds for 15 years, so trust me on this. Everyone in your network has already committed. You don't want to be the only one left out when this becomes public.",
-  "After everything I've shared with you, the least you can do is act now. Wire the deposit in the next 2 hours or you lose the slot forever. Think about your future — are you really willing to gamble everything away?",
-];
 const CHIP_COLORS = ["#615ced", "#7d5cf0", "#a855f7", "#c44df2", "#f43f5e"];
-
 const AGENT_KEYS = ["L1_GRICE", "L2_CARNEGIE", "L3_ARISTOTLE", "L4_BERNE", "L5_LINGUISTIC", "L6_PEIRCE"];
 const AGENT_MONO = { L1_GRICE: "G", L2_CARNEGIE: "C", L3_ARISTOTLE: "A",
   L4_BERNE: "B", L5_LINGUISTIC: "L", L6_PEIRCE: "P" };
@@ -533,108 +455,63 @@ const AGENT_NAMES = { L1_GRICE: "L1 Grice", L2_CARNEGIE: "L2 Influence", L3_ARIS
   L4_BERNE: "L4 Berne", L5_LINGUISTIC: "L5 Linguistics", L6_PEIRCE: "L6 Peirce" };
 
 const $ = (id) => document.getElementById(id);
-let lastResult = null;
+const DATA = window.DEMO_DATA || { samples: [] };
+let currentId = null;
 
-/* ── i18n application ─────────────────────────────────────────────────── */
 function applyLang() {
   const t = T();
   document.documentElement.lang = LANG === "zh" ? "zh-CN" : LANG;
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     el.textContent = t[el.dataset.i18n];
   });
-  document.querySelectorAll("[data-i18n-ph]").forEach((el) => {
-    el.placeholder = t[el.dataset.i18nPh];
-  });
-  document.querySelectorAll("[data-i18n-title]").forEach((el) => {
-    el.title = t[el.dataset.i18nTitle];
-  });
-  $("text").placeholder = t.placeholder;
   $("footerLine").innerHTML = t.footer;
   document.querySelectorAll("#langs button").forEach((b) => {
     b.classList.toggle("on", b.dataset.lang === LANG);
   });
-  buildWolf();
-  if (lastResult) render(lastResult);
-  if (!$("conn").classList.contains("ok") && !$("conn").classList.contains("bad")) {
-    $("conn").textContent = t.connecting;
-  }
-  if ($("chainText").dataset.state !== "ok" && $("chainText").dataset.state !== "bad") {
-    $("chainText").textContent = t.notVerified;
-  }
+  buildChips();
+  if (currentId) show(currentId);
 }
 
 function setLang(l) {
   LANG = l;
   localStorage.setItem("ccx_lang", l);
-  $("lang").value = l;          // narration follows UI language; still user-changeable
   applyLang();
-  refreshChain();
 }
 
-/* ── API plumbing ─────────────────────────────────────────────────────── */
-function apiBase() {
-  const v = $("apiBase").value.trim();
-  return v ? v.replace(/\/+$/, "") : "";
-}
-function headers() {
-  const h = { "Content-Type": "application/json" };
-  const t = $("apiToken").value.trim();
-  if (t) h["X-API-Token"] = t;
-  return h;
-}
-async function api(path, options = {}) {
-  const resp = await fetch(apiBase() + path, { headers: headers(), ...options });
-  if (!resp.ok) {
-    let detail = resp.statusText;
-    try { detail = (await resp.json()).detail || detail; } catch (_) {}
-    throw new Error(`${resp.status} — ${typeof detail === "string" ? detail : JSON.stringify(detail)}`);
-  }
-  return resp.json();
-}
-
-/* ── Connection ───────────────────────────────────────────────────────── */
-async function connect() {
-  const conn = $("conn");
-  conn.className = "pill"; conn.textContent = T().connecting;
-  try {
-    const h = await api("/health");
-    conn.className = "pill ok";
-    conn.textContent = T().connOk(h);
-    refreshChain();
-  } catch (e) {
-    conn.className = "pill bad";
-    conn.textContent = T().connBad + e.message;
-  }
-}
-
-/* ── Analyze ──────────────────────────────────────────────────────────── */
-async function analyze(text) {
-  const btn = $("send");
-  $("error").classList.add("hidden");
-  btn.disabled = true; btn.textContent = T().analyzing;
-  try {
-    const data = await api("/analyze", {
-      method: "POST",
-      body: JSON.stringify({
-        text,
-        user_id: $("userId").value.trim() || "anonymous",
-        lang: $("lang").value,
-        narrate: $("narrate").checked,
-      }),
+function buildChips() {
+  const wolf = DATA.samples.filter((s) => s.id.startsWith("wolf-"));
+  const other = DATA.samples.filter((s) => !s.id.startsWith("wolf-"));
+  const mk = (box, samples, numbered) => {
+    box.innerHTML = "";
+    samples.forEach((s, i) => {
+      const b = document.createElement("button");
+      const label = s.label[LANG] || s.label.en;
+      b.innerHTML = numbered
+        ? `<b style="background:${CHIP_COLORS[i]}">${i + 1}</b>${label}`
+        : label;
+      b.dataset.sid = s.id;
+      b.classList.toggle("on", s.id === currentId);
+      b.onclick = () => show(s.id);
+      box.appendChild(b);
     });
-    lastResult = data;
-    render(data);
-    refreshChain();
-  } catch (e) {
-    $("error").textContent = T().analyzeFail + e.message;
-    $("error").classList.remove("hidden");
-  } finally {
-    btn.disabled = false; btn.textContent = T().analyzeBtn;
-  }
+  };
+  mk($("wolfChips"), wolf, true);
+  mk($("gauntletChips"), other, false);
 }
 
-function render(d) {
+function show(sid) {
   const t = T();
+  const s = DATA.samples.find((x) => x.id === sid);
+  if (!s) return;
+  currentId = sid;
+  document.querySelectorAll(".chips button").forEach((b) => {
+    b.classList.toggle("on", b.dataset.sid === sid);
+  });
+
+  $("msgText").textContent = s.text;
+  $("msgMeta").textContent = `${t.userLabel}: ${s.user_id}`;
+
+  const d = s.result;
   $("result").classList.remove("hidden");
   const v = $("verdict");
   v.dataset.l = d.verdict; v.textContent = d.verdict;
@@ -671,83 +548,49 @@ function render(d) {
     `verdict ${d.audit.verdict_hash}\n` +
     `chain   ${d.audit.chain_valid ? t.chainValid : t.chainBrokenWord} · ` +
     `${Object.keys(d.audit.trace_ids).length} ${t.tracesSealed}`;
+
+  renderChain(s.chain);
 }
 
-/* ── Chain panel ──────────────────────────────────────────────────────── */
-async function refreshChain() {
+function renderChain(chain) {
   const t = T();
-  try {
-    const v = await api("/verify");
-    $("chainLamp").className = "lamp " + (v.chain_ok ? "ok" : "bad");
-    $("chainText").dataset.state = v.chain_ok ? "ok" : "bad";
-    $("chainText").textContent = v.chain_ok
-      ? t.chainOk
-      : t.chainBroken + (v.errors || []).join("; ");
+  const ok = chain.verify.chain_ok;
+  $("chainLamp").className = "lamp " + (ok ? "ok" : "bad");
+  $("chainText").textContent = ok
+    ? t.chainOk
+    : t.chainBroken + (chain.verify.errors || []).join("; ");
 
-    const tr = await api("/traces?limit=8");
-    const traces = tr.traces || [];
-
-    const blk = $("blocks"); blk.innerHTML = "";
-    traces.slice().reverse().forEach((row, i) => {
-      if (i > 0) {
-        const link = document.createElement("div");
-        link.className = "blk-link"; blk.appendChild(link);
-      }
-      const b = document.createElement("div");
-      b.className = "blk";
-      const h = (row.entry_hash || row.trace_id || "").slice(0, 8);
-      b.innerHTML = `<div class="h">${h || "········"}</div>` +
-                    `<div class="a">${(row.agent_id || "—").slice(0, 10)}</div>`;
-      blk.appendChild(b);
-    });
-
-    $("traceRows").innerHTML = traces.map((row) => {
-      const dec = row.decision || "—";
-      const conf = row.confidence || "—";
-      return `<div class="tr-row">` +
-             `<span class="tr-agent">${row.agent_id || "—"}</span>` +
-             `<span class="tr-dec" title="${dec.replace(/"/g, "&quot;")}">${dec}</span>` +
-             `<span class="q" title="${t.confTitle}">${conf}</span></div>`;
-    }).join("") || `<div class="tr-row"><span class="tr-dec">${t.chainEmpty}</span></div>`;
-  } catch (e) {
-    $("chainLamp").className = "lamp bad";
-    $("chainText").dataset.state = "bad";
-    $("chainText").textContent = t.verifyFail + e.message;
-  }
-}
-
-/* ── Wire up ──────────────────────────────────────────────────────────── */
-function buildWolf() {
-  const wolfBox = $("wolf");
-  wolfBox.innerHTML = "";
-  T().wolfLabels.forEach((label, i) => {
-    const b = document.createElement("button");
-    b.innerHTML = `<b style="background:${CHIP_COLORS[i]}">${i + 1}</b>${label}`;
-    b.title = WOLF_TEXTS[i];
-    b.onclick = () => {
-      $("text").value = WOLF_TEXTS[i];
-      $("userId").value = "wolf";
-      analyze(WOLF_TEXTS[i]);
-    };
-    wolfBox.appendChild(b);
+  const traces = chain.traces || [];
+  const blk = $("blocks"); blk.innerHTML = "";
+  traces.slice().reverse().forEach((row, i) => {
+    if (i > 0) {
+      const link = document.createElement("div");
+      link.className = "blk-link"; blk.appendChild(link);
+    }
+    const b = document.createElement("div");
+    b.className = "blk";
+    const h = (row.entry_hash || row.trace_id || "").slice(0, 8);
+    b.innerHTML = `<div class="h">${h || "········"}</div>` +
+                  `<div class="a">${(row.agent_id || "—").slice(0, 10)}</div>`;
+    blk.appendChild(b);
   });
+
+  $("traceRows").innerHTML = traces.map((row) => {
+    const dec = row.decision || "—";
+    const conf = row.confidence || "—";
+    return `<div class="tr-row">` +
+           `<span class="tr-agent">${row.agent_id || "—"}</span>` +
+           `<span class="tr-dec" title="${dec.replace(/"/g, "&quot;")}">${dec}</span>` +
+           `<span class="q" title="${t.confTitle}">${conf}</span></div>`;
+  }).join("");
 }
 
-$("send").onclick = () => {
-  const text = $("text").value.trim();
-  if (text) analyze(text);
-};
-$("text").addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) $("send").click();
-});
-$("reverify").onclick = refreshChain;
-$("reconnect").onclick = connect;
 document.querySelectorAll("#langs button").forEach((b) => {
   b.onclick = () => setLang(b.dataset.lang);
 });
 
 applyLang();
-connect();
+if (DATA.samples.length) show(DATA.samples[DATA.samples.length - 1].id);
 </script>
 </body>
 </html>
