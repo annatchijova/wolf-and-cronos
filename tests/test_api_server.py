@@ -77,6 +77,29 @@ class OpenModeTest(unittest.TestCase):
         self.assertIn("text/html", r.headers["content-type"])
         self.assertIn("CORVUS × CRONOS — Live Console", r.text)
 
+    def test_chat_page_served(self) -> None:
+        r = self.client.get("/chat")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("text/html", r.headers["content-type"])
+        self.assertIn("Chat (Qwen live)", r.text)
+
+    def test_chat_offline_returns_note_not_fake_reply(self) -> None:
+        # No DASHSCOPE_API_KEY in the test env → honest offline note, never a
+        # fabricated reply.
+        r = self.client.post("/chat", json={"message": "How does the gate work?"})
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertIsNone(data["reply"])
+        self.assertIn("DASHSCOPE_API_KEY", data["note"])
+
+    def test_chat_unsupported_lang_rejected(self) -> None:
+        r = self.client.post("/chat", json={"message": "hi", "lang": "fr"})
+        self.assertEqual(r.status_code, 422)
+
+    def test_chat_empty_message_rejected(self) -> None:
+        r = self.client.post("/chat", json={"message": ""})
+        self.assertEqual(r.status_code, 422)
+
     def test_analyze_manipulative_text_seals_verdict(self) -> None:
         r = self.client.post("/analyze", json={
             "text": MANIPULATIVE, "user_id": "wolf", "lang": "es",

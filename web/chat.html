@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CORVUS × CRONOS — Chat (Qwen live)</title>
+<style>
+  :root {
+    --bg0: #0a0618; --bg1: #140b30;
+    --panel: rgba(32, 22, 66, .58);
+    --line: rgba(167, 139, 250, .22); --line-strong: rgba(167, 139, 250, .45);
+    --ink: #f3f0ff; --muted: #8f8ab8; --lavender: #c4b5fd;
+    --indigo: #615ced; --violet: #a855f7; --fuchsia: #d946ef;
+    --grad: linear-gradient(135deg, #615ced 0%, #a855f7 55%, #d946ef 100%);
+    --ok: #4ade80; --radius: 18px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; color: var(--ink);
+    font: clamp(15px, 0.5vw + 11px, 18px)/1.6 "Segoe UI", system-ui, sans-serif;
+    background:
+      radial-gradient(ellipse 60rem 34rem at 12% -6%, rgba(97, 92, 237, .28), transparent),
+      radial-gradient(ellipse 50rem 30rem at 100% 8%, rgba(217, 70, 239, .16), transparent),
+      linear-gradient(180deg, var(--bg1), var(--bg0) 42%);
+    background-attachment: fixed;
+  }
+  main { width: min(94vw, 860px); margin: 0 auto; padding: 26px 20px 40px;
+    min-height: 100vh; display: flex; flex-direction: column; }
+
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  a.mark {
+    width: 48px; height: 48px; border-radius: 14px; background: var(--grad);
+    display: grid; place-items: center; font-weight: 800; font-size: 16px; color: #fff;
+    text-decoration: none; box-shadow: 0 6px 24px rgba(168, 85, 247, .45);
+    transition: transform .15s, box-shadow .15s;
+  }
+  a.mark:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(168, 85, 247, .65); }
+  .wordmark h1 { margin: 0; font-size: clamp(18px, 1.2vw + 9px, 24px); letter-spacing: .04em; }
+  .wordmark h1 .x { background: var(--grad); -webkit-background-clip: text; background-clip: text;
+    color: transparent; padding: 0 2px; }
+  .wordmark .sub { color: var(--muted); font-size: 12.5px; }
+  .pills { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .qpill { font-size: 11.5px; letter-spacing: .06em; padding: 6px 13px; border-radius: 999px;
+    border: 1px solid transparent;
+    background: linear-gradient(var(--bg1), var(--bg1)) padding-box, var(--grad) border-box; }
+  .qpill b { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  #conn { font-size: 11.5px; letter-spacing: .06em; padding: 6px 13px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--lavender); }
+  #conn.ok { color: var(--ok); border-color: rgba(74, 222, 128, .45); }
+  #conn.bad { color: #f87171; border-color: rgba(248, 113, 113, .45); }
+  .langs { display: flex; gap: 3px; border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+  .langs button { background: transparent; border: none; color: var(--muted); cursor: pointer;
+    font: inherit; font-size: 12px; font-weight: 600; padding: 4px 11px; border-radius: 999px; }
+  .langs button.on { background: var(--grad); color: #fff; }
+
+  .panel {
+    position: relative; flex: 1; display: flex; flex-direction: column;
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 20px; backdrop-filter: blur(14px); box-shadow: 0 18px 50px rgba(6, 2, 24, .5);
+    min-height: 0;
+  }
+  .panel::before { content: ""; position: absolute; top: 0; left: 18px; right: 18px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(168,85,247,.7), transparent); }
+
+  #log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;
+    padding-right: 4px; min-height: 240px; }
+  .msg { max-width: 82%; padding: 11px 15px; border-radius: 15px; white-space: pre-wrap;
+    line-height: 1.55; font-size: clamp(14px, 0.4vw + 11px, 16px); animation: rise .3s ease; }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+  .msg.user { align-self: flex-end; background: var(--grad); color: #fff;
+    border-bottom-right-radius: 5px; }
+  .msg.bot { align-self: flex-start; background: rgba(10, 6, 26, .7);
+    border: 1px solid var(--line); border-bottom-left-radius: 5px; }
+  .msg.note { align-self: center; background: rgba(251, 191, 36, .1); color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, .35); font-size: 13px; max-width: 100%; text-align: center; }
+  .msg.bot.typing { color: var(--muted); font-style: italic; }
+  .who { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+    margin-bottom: 4px; }
+
+  form { display: flex; gap: 10px; margin-top: 16px; }
+  textarea {
+    flex: 1; resize: none; min-height: 52px; max-height: 160px;
+    background: rgba(10, 6, 26, .85); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 12px; padding: 13px 15px; font: inherit;
+  }
+  textarea:focus { outline: none; border-color: var(--violet); box-shadow: 0 0 0 3px rgba(168, 85, 247, .18); }
+  button.send {
+    border: none; border-radius: 12px; padding: 0 24px; cursor: pointer; font: inherit;
+    font-weight: 600; background: var(--grad); color: #fff;
+    box-shadow: 0 4px 18px rgba(168, 85, 247, .35); transition: transform .15s, box-shadow .15s, opacity .15s;
+  }
+  button.send:hover { transform: translateY(-1px); }
+  button.send:disabled { opacity: .5; cursor: wait; }
+
+  .conn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .conn-row input { background: rgba(10, 6, 26, .85); color: var(--ink); border: 1px solid var(--line);
+    border-radius: 8px; padding: 7px 11px; font: inherit; font-size: 12.5px; }
+  #apiBase { width: 210px; } #apiToken { width: 160px; }
+  .hint { color: var(--muted); font-size: 11.5px; margin-top: 4px; }
+  .hint a { color: var(--lavender); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <a class="mark" href="index.html" title="Home">C×C</a>
+    <div class="wordmark">
+      <h1>CORVUS <span class="x">×</span> CRONOS — <span data-i18n="chat"></span></h1>
+      <div class="sub" data-i18n="sub"></div>
+    </div>
+    <div class="pills">
+      <div class="langs" id="langs">
+        <button data-lang="en">EN</button><button data-lang="es">ES</button><button data-lang="zh">中文</button>
+      </div>
+      <span class="qpill"><span data-i18n="live"></span> <b>Qwen</b></span>
+      <span id="conn"></span>
+    </div>
+  </header>
+
+  <section class="panel">
+    <div id="log"></div>
+    <form id="form">
+      <textarea id="input" rows="1" data-i18n-ph="placeholder"></textarea>
+      <button class="send" id="send" type="submit" data-i18n="send"></button>
+    </form>
+    <div class="conn-row">
+      <input id="apiBase" data-i18n-ph="apiBasePh">
+      <input id="apiToken" type="password" data-i18n-ph="apiTokenPh">
+    </div>
+    <div class="hint"><span data-i18n="hint"></span> <a href="dashboard.html" data-i18n="analyzeLink"></a></div>
+  </section>
+</main>
+
+<script>
+"use strict";
+const I18N = {
+  en: {
+    chat: "Chat", sub: "Talk to the Qwen-backed assistant, live on Alibaba Cloud.",
+    live: "live on", send: "Send",
+    placeholder: "Ask about the system, or paste a message and ask if it looks like a scam…",
+    apiBasePh: "API base (default: this origin)", apiTokenPh: "X-API-Token (if required)",
+    hint: "This is the conversational surface. For a sealed verdict, use",
+    analyzeLink: "Analyze →",
+    greeting: "Hi — I'm the CORVUS + CRONOS assistant, running on Qwen. Ask me how the six-framework detector works, or paste a suspicious message and I'll reason about it. For a sealed, tamper-evident verdict, use the Analyze console.",
+    connOk: "Qwen live", connOffline: "Qwen offline", connBad: "API unreachable",
+    thinking: "thinking…", failed: "Request failed: ",
+    offline: "Chat is offline — the server has no DASHSCOPE_API_KEY set.",
+    you: "You", bot: "Assistant",
+  },
+  es: {
+    chat: "Chat", sub: "Hablá con el asistente sobre Qwen, en vivo en Alibaba Cloud.",
+    live: "en vivo sobre", send: "Enviar",
+    placeholder: "Preguntá sobre el sistema, o pegá un mensaje y preguntá si parece una estafa…",
+    apiBasePh: "Base de la API (por defecto: este origen)", apiTokenPh: "X-API-Token (si se requiere)",
+    hint: "Esta es la superficie conversacional. Para un veredicto sellado, usá",
+    analyzeLink: "Analizar →",
+    greeting: "Hola — soy el asistente de CORVUS + CRONOS, corriendo sobre Qwen. Preguntame cómo funciona el detector de seis marcos, o pegá un mensaje sospechoso y razono sobre él. Para un veredicto sellado y a prueba de adulteración, usá la consola de Analizar.",
+    connOk: "Qwen en vivo", connOffline: "Qwen offline", connBad: "API inalcanzable",
+    thinking: "pensando…", failed: "Falló el pedido: ",
+    offline: "El chat está offline — el servidor no tiene DASHSCOPE_API_KEY.",
+    you: "Vos", bot: "Asistente",
+  },
+  zh: {
+    chat: "对话", sub: "与运行在阿里云上的 Qwen 助手实时对话。",
+    live: "实时运行于", send: "发送",
+    placeholder: "询问系统原理，或粘贴一条消息问它是否像诈骗……",
+    apiBasePh: "API 地址（默认：当前源）", apiTokenPh: "X-API-Token（如需要）",
+    hint: "这是对话界面。如需密封裁决，请使用",
+    analyzeLink: "分析 →",
+    greeting: "你好 — 我是 CORVUS + CRONOS 助手，运行在 Qwen 上。问我六框架检测器如何工作，或粘贴一条可疑消息，我会为你分析。如需密封、防篡改的裁决，请使用分析控制台。",
+    connOk: "Qwen 在线", connOffline: "Qwen 离线", connBad: "无法访问 API",
+    thinking: "思考中……", failed: "请求失败：",
+    offline: "对话离线 —— 服务器未设置 DASHSCOPE_API_KEY。",
+    you: "你", bot: "助手",
+  },
+};
+let LANG = localStorage.getItem("ccx_lang") || "en";
+const T = () => I18N[LANG];
+const $ = (id) => document.getElementById(id);
+const history = [];
+let greeted = false;
+
+function apiBase(){ const v = $("apiBase").value.trim(); return v ? v.replace(/\/+$/, "") : ""; }
+function headers(){ const h = {"Content-Type":"application/json"}; const t = $("apiToken").value.trim(); if(t) h["X-API-Token"]=t; return h; }
+
+function applyLang(){
+  const t = T();
+  document.documentElement.lang = LANG === "zh" ? "zh-CN" : LANG;
+  document.querySelectorAll("[data-i18n]").forEach(e => e.textContent = t[e.dataset.i18n]);
+  document.querySelectorAll("[data-i18n-ph]").forEach(e => e.placeholder = t[e.dataset.i18nPh]);
+  document.querySelectorAll("#langs button").forEach(b => b.classList.toggle("on", b.dataset.lang === LANG));
+  // reset transcript greeting in the new language
+  $("log").innerHTML = ""; history.length = 0; greeted = false;
+  bubble("bot", t.greeting);
+  greeted = true;
+}
+function bubble(kind, text, who){
+  const el = document.createElement("div");
+  el.className = "msg " + kind;
+  if (who) { const w = document.createElement("div"); w.className = "who"; w.textContent = who; el.appendChild(w); }
+  el.appendChild(document.createTextNode(text));
+  $("log").appendChild(el);
+  $("log").scrollTop = $("log").scrollHeight;
+  return el;
+}
+
+async function connect(){
+  const c = $("conn"); c.className = ""; c.textContent = "…";
+  try {
+    const r = await fetch(apiBase() + "/health", { headers: headers() });
+    const h = await r.json();
+    if (h.qwen_narration === "configured"){ c.className = "ok"; c.textContent = T().connOk; }
+    else { c.className = ""; c.textContent = T().connOffline; }
+  } catch(e){ c.className = "bad"; c.textContent = T().connBad; }
+}
+
+async function send(message){
+  const t = T();
+  bubble("user", message, t.you);
+  history.push({ role:"user", content: message });
+  const btn = $("send"); btn.disabled = true;
+  const typing = bubble("bot typing", t.thinking);
+  try {
+    const r = await fetch(apiBase() + "/chat", {
+      method:"POST", headers: headers(),
+      body: JSON.stringify({ message, lang: LANG, history: history.slice(-6) }),
+    });
+    if (!r.ok){ let d = r.statusText; try { d = (await r.json()).detail || d; } catch(_){}
+      throw new Error(typeof d === "string" ? d : JSON.stringify(d)); }
+    const data = await r.json();
+    typing.remove();
+    if (data.reply){
+      bubble("bot", data.reply, `${t.bot} · ${data.model || "qwen"}`);
+      history.push({ role:"assistant", content: data.reply });
+    } else {
+      bubble("note", data.note || t.offline);
+    }
+  } catch(e){
+    typing.remove();
+    bubble("note", t.failed + e.message);
+  } finally {
+    btn.disabled = false; $("input").focus();
+  }
+}
+
+$("form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const v = $("input").value.trim();
+  if (!v) return;
+  $("input").value = ""; $("input").style.height = "auto";
+  send(v);
+});
+$("input").addEventListener("input", function(){ this.style.height = "auto"; this.style.height = Math.min(this.scrollHeight, 160) + "px"; });
+$("input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); $("form").requestSubmit(); }
+});
+document.querySelectorAll("#langs button").forEach(b => {
+  b.onclick = () => { LANG = b.dataset.lang; localStorage.setItem("ccx_lang", LANG); applyLang(); connect(); };
+});
+$("apiBase").addEventListener("change", connect);
+$("apiToken").addEventListener("change", connect);
+
+applyLang();
+connect();
+</script>
+</body>
+</html>

@@ -152,6 +152,56 @@ class AnalyzeRequest(BaseModel):
     narrate: bool = Field(default=True)
 
 
+class ChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=MAX_TEXT_CHARS)
+    lang: str = Field(default="en", description="Reply language: en, es, zh.")
+    history: list[dict] = Field(
+        default_factory=list,
+        description="Recent turns, oldest first: [{role: user|assistant, content}].",
+    )
+
+
+# Conversational companion — deliberately NOT the decision path. The chat can
+# discuss and explain; the sealed verdict is only ever issued by /analyze.
+_CHAT_SYSTEM = {
+    "en": (
+        "You are the CORVUS + CRONOS assistant, running live on Qwen "
+        "(qwen-plus via Alibaba Cloud DashScope). CORVUS detects manipulation "
+        "and social engineering in text through six independent frameworks "
+        "(Grice, Carnegie/Cialdini, Aristotle, Berne, linguistics, Peirce); "
+        "CRONOS seals every verdict into a tamper-evident SHA-256 chain. You "
+        "are conversational only: you do NOT issue the sealed verdict — that "
+        "is the deterministic engine's job. If the user wants a real verdict "
+        "on a message, tell them to run it through Analyze. Help them "
+        "understand the system and reason about whether a message looks like a "
+        "scam. Be concise, grounded, and honest about uncertainty. Reply in "
+        "English."
+    ),
+    "es": (
+        "Sos el asistente de CORVUS + CRONOS, corriendo en vivo sobre Qwen "
+        "(qwen-plus vía Alibaba Cloud DashScope). CORVUS detecta manipulacion "
+        "e ingenieria social en texto con seis marcos independientes (Grice, "
+        "Carnegie/Cialdini, Aristoteles, Berne, linguistica, Peirce); CRONOS "
+        "sella cada veredicto en una cadena SHA-256 a prueba de adulteracion. "
+        "Sos solo conversacional: NO emitis el veredicto sellado, eso lo hace "
+        "el motor determinista. Si la persona quiere un veredicto real sobre "
+        "un mensaje, deciles que lo pasen por Analizar. Ayudalos a entender el "
+        "sistema y a razonar si un mensaje parece una estafa. Se conciso, "
+        "fundamentado y honesto sobre la incertidumbre. Responde en espanol "
+        "rioplatense."
+    ),
+    "zh": (
+        "You are the CORVUS + CRONOS assistant, running live on Qwen "
+        "(qwen-plus via Alibaba Cloud DashScope). CORVUS detects manipulation "
+        "through six frameworks; CRONOS seals every verdict into a "
+        "tamper-evident SHA-256 chain. You are conversational only and never "
+        "issue the sealed verdict (that is the deterministic engine's job — "
+        "point the user to Analyze for a real verdict). Be concise, grounded, "
+        "and honest about uncertainty. Reply in Simplified Chinese."
+    ),
+}
+
+
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
@@ -235,6 +285,50 @@ def analyze(body: AnalyzeRequest, request: Request) -> dict:
         },
         "narration": narration,
     }
+
+
+@app.get("/chat", include_in_schema=False)
+def chat_ui() -> FileResponse:
+    """Minimal chat page — talk to the Qwen-backed assistant from a browser."""
+    return FileResponse(os.path.join(_WEB_DIR, "chat.html"))
+
+
+@app.post("/chat", dependencies=[Depends(_require_token)])
+def chat(body: ChatRequest, request: Request) -> dict:
+    """Free-form conversation with the live Qwen model. Single-shot per call,
+    with the recent transcript folded in for continuity. This is the
+    conversational surface only — it never issues a sealed verdict."""
+    if body.lang not in _SUPPORTED_LANGS:
+        raise HTTPException(
+            status_code=422,
+            detail=f"lang must be one of {sorted(_SUPPORTED_LANGS)}.",
+        )
+    qwen: QwenClient = request.app.state.qwen
+    if not qwen.available:
+        return {
+            "reply": None,
+            "model": None,
+            "note": (
+                "Chat offline — DASHSCOPE_API_KEY not configured. "
+                "Set it on the server to talk to Qwen live."
+            ),
+        }
+
+    # QwenClient.complete() is single-shot; fold a short, sanitized history
+    # into the prompt so the conversation stays coherent without changing the
+    # client. Sanitizing every turn also blocks prompt-injection via history.
+    turns: list[str] = []
+    for m in body.history[-6:]:
+        role = m.get("role")
+        content = m.get("content")
+        if role in ("user", "assistant") and isinstance(content, str):
+            who = "User" if role == "user" else "Assistant"
+            turns.append(f"{who}: {_sanitize_text(content, max_chars=600)}")
+    prefix = ("\n".join(turns) + "\n\n") if turns else ""
+    prompt = f"{prefix}User: {_sanitize_text(body.message, max_chars=2000)}"
+
+    reply = qwen.complete(prompt, system_prompt=_CHAT_SYSTEM[body.lang])
+    return {"reply": reply, "model": qwen.model, "lang": body.lang}
 
 
 @app.get("/verify", dependencies=[Depends(_require_token)])

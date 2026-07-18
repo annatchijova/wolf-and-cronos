@@ -422,7 +422,9 @@ pattern already proven with `rebound` and `raven-memory`:
 
 | Endpoint | What it does |
 |---|---|
+| `GET /` | the live console (`dashboard.html`) — analyze any message in the browser |
 | `POST /analyze` | text in → sealed CORVUS verdict, exact `Fraction` score, CRONOS trace ids, chain verification — plus optional `qwen-plus` narration in the caller's language (`en`/`es`/`zh`) |
+| `GET /chat` · `POST /chat` | a plain chat page and endpoint — free-form conversation with the live `qwen-plus` model (proves the DashScope connection on Alibaba), kept strictly off the decision path: it never issues a sealed verdict |
 | `GET /verify` | recompute and verify the full CRONOS hash chain |
 | `GET /traces` | recent sealed trace headers |
 | `GET /health` | liveness + configuration surface (no secrets) |

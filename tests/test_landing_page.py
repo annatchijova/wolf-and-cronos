@@ -1,9 +1,14 @@
-"""Static checks for the public CORVUS × CRONOS project page."""
+"""Static checks for the public CORVUS × CRONOS integration overview page.
+
+This is the bilingual (ES/EN) verification page — now served as
+`web/overview.html` (the root `web/index.html` is the trilingual landing
+hub that links to it, the CRONOS page, the Wolf demo, and the live console).
+"""
 
 from pathlib import Path
 
 
-PAGE = Path(__file__).resolve().parents[1] / "web" / "index.html"
+PAGE = Path(__file__).resolve().parents[1] / "web" / "overview.html"
 
 
 def test_landing_page_is_a_bilingual_standalone_static_site():
