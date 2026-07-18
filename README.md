@@ -2,7 +2,7 @@
 
 **Qwen Cloud Hackathon 2026 · Track 3: Agentic AI**
 
-**▶ [Live — wolf-and-cronos.vercel.app](https://wolf-and-cronos.vercel.app)** — the CRONOS showcase, the Wolf demo, and the live console, in EN / ES / 中文.
+**Live** — ▶ [wolf-and-cronos.vercel.app](https://wolf-and-cronos.vercel.app) (full site: CRONOS showcase · the Wolf demo · live console, in EN / ES / 中文) · [Wolf & CRONOS](https://annatchijova.github.io/vigia/wolf-and-cronos.html) · [CRONOS page](https://annatchijova.github.io/vigia/cronos.html)
 
 ---
 
@@ -56,6 +56,19 @@ The repository is fully self-contained — everything below ships in this repo:
 - **`corvus_cronos/`** (118 tests) — the integration bridge and product layer: wraps CORVUS output into CRONOS traces, runs Qwen as a CRONOS-disciplined agent, serves the hosted API, and calls Qwen to narrate — never to judge — the negotiation for human review.
 
 CRONOS is the product's center of gravity: every agent vote, every gate decision, every discarded hypothesis becomes a sealed, verifiable trace. CORVUS supplies the detection signals that make those traces worth sealing.
+
+---
+
+## Not one trick — a platform with several jobs
+
+The Wolf is the demo. It is not the only thing this does. Three reusable pieces, each useful on its own:
+
+- **Catch manipulation in text.** CORVUS's six frameworks plus the corroboration gate flag social engineering, phishing, and coercion — with a *sealed, auditable reason*, not a black-box score. Shipped as the hosted [`/analyze` API](#hosted-api-api_serverpy--the-alibaba-cloud-product) for Alibaba Cloud.
+- **Give any AI agent a black box.** CRONOS records the full reasoning of *any* agent — recalls, hypotheses, evidence, discards, decision — into a tamper-evident chain, over MCP. It runs in **Claude Code and Codex daily**: code audits, forensic reviews, and — in one real sealed trace — stopping a rigid "no-floats" rule from rewriting working code it was never meant to touch. The real reports are on the [CRONOS page](https://annatchijova.github.io/vigia/cronos.html).
+- **Bring that discipline to Qwen.** [`QwenCronosAgent`](#qwen-native-agent-driver-corvus_cronosqwen_agentpy) hands `qwen-max` the same ten CRONOS tools through DashScope function calling, so a DashScope model can run a hypothesis-tested, *sealed* reasoning loop for any task — not just narrate one.
+- **Prove nothing was tampered with.** Every verdict, vote, and discard is SHA-256-chained. A corrupt insider editing the database directly is caught the next time the chain is verified — *"you can delete the truth, you cannot hide that you deleted it."*
+
+CORVUS is one detector plugged into it. CRONOS is the platform, and any reasoning task — not just forensics — is a valid use for it.
 
 ---
 
@@ -222,6 +235,26 @@ history.
   counter-hypothesis text in `_build_devils_advocate()` is built directly from
   which layers fired/stayed silent — Qwen narrates it in prose, but the
   argument itself comes from deterministic Python, not the model.
+
+---
+
+## Hardening — we red-teamed our own gate first
+
+Two rounds of adversarial audit against this bridge specifically
+(`docs/RED_TEAM_REPORT.md`); CORVUS and CRONOS internals were read, never
+modified. The findings that shaped the current code:
+
+| # | Finding | Fix |
+|---|---|---|
+| RT-01 | A detector crash was indistinguishable from a genuine `SILENT` | Crashes are caught and reported via `crashed_agents`, separate from real silence |
+| RT-02 | User text could smuggle a fake `=== SEALED VERDICT ===` block into the narration prompt | `narrator.py` strips any sentinel/override line before Qwen ever sees it |
+| RT-03 | An agent's trace recorded the gate's consensus instead of its own vote | Agents record their own `SIGNAL_DETECTED`; only the `GATE` trace records consensus |
+| RT-04 / RT-08 | `text` / `artifact_id` / `user_id` had no length caps | Bounded at 50,000 / 256 / 128 chars at the top of `analyze()` |
+| RT-09 | The baseline read ran unlocked while sharing a store with the locked write phase | Wrapped in the same `threading.Lock` as the writes |
+| RT-10 | A drip-feed attacker (one tactic per message) never crossed the single-message gate | A bounded 6-message per-user window escalates on the *union* of frameworks (see above) |
+
+RT-05 (a CLI-only `os.environ` thread-safety nit in `benchmark.py`) is
+documented and left open — low risk until the benchmark is ever parallelized.
 
 ---
 
