@@ -2,6 +2,8 @@
 
 **Qwen Cloud Hackathon 2026 · Track 3: Agentic AI**
 
+**▶ [Live — wolf-and-cronos.vercel.app](https://wolf-and-cronos.vercel.app)** — the CRONOS showcase, the Wolf demo, and the live console, in EN / ES / 中文.
+
 ---
 
 ## Act 1 — The Wolf
@@ -470,6 +472,12 @@ Two refusal rules keep the numbers honest:
 - SHA-256 audit hash over the canonical JSON of all agent signals.
 - CRONOS chain: each entry hashes the previous entry — any retroactive edit breaks the chain.
 - Qwen narration is outside the sealed payload — swapping models cannot alter the verdict.
+
+---
+
+## Built with
+
+**Qwen Cloud** — `qwen-max` (the Wolf's live attacks and the CRONOS-disciplined agent driver) and `qwen-plus` (the sealed-verdict narration), both via the **Alibaba Cloud DashScope** international endpoint, called directly over `requests` (no `openai` SDK). Python 3.12, `fractions.Fraction` (zero floats in the sealed path), SHA-256 hash chains, FastAPI + Uvicorn (the hosted API, targeted at **Alibaba Cloud ECS** + Docker + Caddy), the Model Context Protocol (the CRONOS and CORVUS MCP servers), and a self-contained static frontend on Vercel.
 
 ---
 
