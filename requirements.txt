@@ -1,9 +1,16 @@
-# qwen-track3 — CORVUS + CRONOS negotiation engine
+# corvus-cronos-bridge — CORVUS + CRONOS product
 # Qwen Cloud Hackathon 2026, Track 3
-# Apache 2.0 — VIGÍA AI Collective
+# Apache 2.0 — Anna Tchijova, VIGIA AI Collective
 
 # Qwen Cloud HTTP client (no openai SDK)
 requests>=2.31.0
+
+# Hosted API (Alibaba Cloud ECS deployment)
+fastapi>=0.110.0
+uvicorn>=0.29.0
+
+# MCP servers (cronos/mcp_server.py, corvus/mcp_server.py)
+mcp>=1.0.0
 
 # Testing
 pytest>=7.4.0
