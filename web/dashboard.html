@@ -5,152 +5,319 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CORVUS × CRONOS — Live Console</title>
 <style>
+  /* ── Qwen palette: indigo → violet → fuchsia ─────────────────────── */
   :root {
-    --navy: #0c1e34;
-    --panel: rgba(13, 33, 57, .74);
-    --line: rgba(177, 211, 248, .18);
-    --muted: #9bb1c8;
-    --paper: #f4f8fc;
-    --aqua: #68e3d0;
-    --blue: #7fb4ff;
-    --coral: #ff9277;
-    --gold: #f5cf73;
-    --radius: 16px;
+    --bg0: #0a0618;
+    --bg1: #140b30;
+    --panel: rgba(32, 22, 66, .58);
+    --panel-solid: #1a1140;
+    --line: rgba(167, 139, 250, .22);
+    --line-strong: rgba(167, 139, 250, .45);
+    --ink: #f3f0ff;
+    --muted: #8f8ab8;
+    --lavender: #c4b5fd;
+    --indigo: #615ced;
+    --violet: #a855f7;
+    --fuchsia: #d946ef;
+    --grad: linear-gradient(135deg, #615ced 0%, #a855f7 55%, #d946ef 100%);
+    --ok: #4ade80;
+    --watch: #fbbf24;
+    --alert: #fb923c;
+    --critical: #f43f5e;
+    --radius: 18px;
   }
   * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
   body {
     margin: 0;
     min-height: 100vh;
-    color: var(--paper);
-    font: 15px/1.55 "Segoe UI", system-ui, sans-serif;
+    color: var(--ink);
+    font: 15px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
     background:
-      radial-gradient(circle at 8% 0%, #24344f 0, transparent 30rem),
-      radial-gradient(circle at 95% 12%, #1c3450 0, transparent 26rem),
-      var(--navy);
+      radial-gradient(ellipse 60rem 34rem at 12% -6%, rgba(97, 92, 237, .28), transparent),
+      radial-gradient(ellipse 50rem 30rem at 100% 8%, rgba(217, 70, 239, .16), transparent),
+      radial-gradient(ellipse 44rem 30rem at 50% 110%, rgba(168, 85, 247, .14), transparent),
+      linear-gradient(180deg, var(--bg1), var(--bg0) 40%);
+    background-attachment: fixed;
   }
-  main { max-width: 1180px; margin: 0 auto; padding: 28px 20px 60px; }
-
-  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 14px; margin-bottom: 22px; }
-  header h1 { font-size: 22px; letter-spacing: .04em; margin: 0; }
-  header h1 b { color: var(--aqua); }
-  header .sub { color: var(--muted); font-size: 13px; }
-  #conn {
-    margin-left: auto; font-size: 12px; letter-spacing: .08em;
-    padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line);
+  /* faint dot grid for the control-room feel */
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none;
+    background-image: radial-gradient(rgba(196, 181, 253, .08) 1px, transparent 1px);
+    background-size: 26px 26px;
+    mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
   }
-  #conn.ok  { color: var(--aqua);  border-color: rgba(104,227,208,.4); }
-  #conn.bad { color: var(--coral); border-color: rgba(255,146,119,.4); }
+  main { position: relative; max-width: 1220px; margin: 0 auto; padding: 30px 22px 70px; }
 
-  .grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 18px; }
-  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  /* ── Header ──────────────────────────────────────────────────────── */
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-bottom: 26px; }
+  .mark {
+    width: 46px; height: 46px; border-radius: 14px; background: var(--grad);
+    display: grid; place-items: center; font-weight: 800; font-size: 17px;
+    letter-spacing: -.02em; color: #fff;
+    box-shadow: 0 6px 24px rgba(168, 85, 247, .45), inset 0 1px 0 rgba(255,255,255,.35);
+  }
+  .wordmark h1 { margin: 0; font-size: 21px; letter-spacing: .05em; font-weight: 700; }
+  .wordmark h1 .x {
+    background: var(--grad); -webkit-background-clip: text; background-clip: text;
+    color: transparent; padding: 0 2px; font-weight: 800;
+  }
+  .wordmark .sub { color: var(--muted); font-size: 12.5px; letter-spacing: .04em; }
+  .pills { margin-left: auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .pill {
+    font-size: 11.5px; letter-spacing: .08em; padding: 6px 14px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--lavender); white-space: nowrap;
+  }
+  .pill.qwen {
+    border: 1px solid transparent;
+    background:
+      linear-gradient(var(--bg1), var(--bg1)) padding-box,
+      var(--grad) border-box;
+  }
+  .pill.qwen b { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  #conn.ok  { color: var(--ok);       border-color: rgba(74, 222, 128, .45); }
+  #conn.bad { color: var(--critical); border-color: rgba(244, 63, 94, .45); }
+
+  /* ── Layout ──────────────────────────────────────────────────────── */
+  .grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 20px; }
+  @media (max-width: 940px) { .grid { grid-template-columns: 1fr; } }
 
   .panel {
-    background: var(--panel); border: 1px solid var(--line);
-    border-radius: var(--radius); padding: 18px 20px;
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 18px 50px rgba(6, 2, 24, .5);
+  }
+  /* gradient hairline on top of each panel */
+  .panel::before {
+    content: ""; position: absolute; top: 0; left: 18px; right: 18px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(168,85,247,.7), transparent);
   }
   .panel h2 {
-    margin: 0 0 12px; font-size: 12px; letter-spacing: .18em;
-    text-transform: uppercase; color: var(--muted);
+    margin: 0 0 14px; font-size: 11.5px; letter-spacing: .22em;
+    text-transform: uppercase; color: var(--muted); font-weight: 700;
   }
+  .panel h2 small { color: var(--muted); font-weight: 400; letter-spacing: .05em; text-transform: none; }
 
-  textarea {
-    width: 100%; min-height: 110px; resize: vertical;
-    background: rgba(6, 16, 30, .8); color: var(--paper);
-    border: 1px solid var(--line); border-radius: 10px; padding: 12px;
+  /* ── Inputs ──────────────────────────────────────────────────────── */
+  textarea, input, select {
+    background: rgba(10, 6, 26, .85);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 13px;
     font: inherit;
+    transition: border-color .18s, box-shadow .18s;
   }
-  textarea:focus, input:focus, select:focus { outline: 1px solid var(--blue); }
-  .row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; align-items: center; }
-  input, select {
-    background: rgba(6, 16, 30, .8); color: var(--paper);
-    border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font: inherit;
+  textarea { width: 100%; min-height: 118px; resize: vertical; line-height: 1.55; }
+  textarea:focus, input:focus, select:focus {
+    outline: none; border-color: var(--violet);
+    box-shadow: 0 0 0 3px rgba(168, 85, 247, .18);
   }
-  input#userId { width: 130px; }
-  input#apiBase { width: 210px; }
-  input#apiToken { width: 170px; }
-  label.chk { color: var(--muted); font-size: 13px; display: flex; gap: 6px; align-items: center; }
+  ::placeholder { color: #5e5a86; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; align-items: center; }
+  input#userId { width: 132px; }
+  input#apiBase { width: 220px; }
+  input#apiToken { width: 175px; }
+  label.chk { color: var(--muted); font-size: 13px; display: flex; gap: 7px; align-items: center; cursor: pointer; }
+  label.chk input { accent-color: var(--violet); }
 
+  /* ── Buttons ─────────────────────────────────────────────────────── */
   button {
-    cursor: pointer; font: inherit; border-radius: 8px;
-    border: 1px solid rgba(104,227,208,.45);
-    background: rgba(104,227,208,.12); color: var(--aqua);
-    padding: 8px 18px; letter-spacing: .04em;
+    cursor: pointer; font: inherit; font-weight: 600; letter-spacing: .04em;
+    border-radius: 12px; border: none; padding: 10px 22px;
+    background: var(--grad); color: #fff;
+    box-shadow: 0 4px 18px rgba(168, 85, 247, .35);
+    transition: transform .15s, box-shadow .15s, opacity .15s;
   }
-  button:hover { background: rgba(104,227,208,.22); }
-  button:disabled { opacity: .45; cursor: wait; }
-  button.ghost { border-color: var(--line); background: transparent; color: var(--muted); }
-  button.ghost:hover { color: var(--paper); }
-
-  .wolfchips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-  .wolfchips button { font-size: 12px; padding: 5px 12px; }
-
-  .vbadge {
-    display: inline-block; padding: 5px 16px; border-radius: 999px;
-    font-weight: 700; letter-spacing: .12em; font-size: 14px;
+  button:hover { transform: translateY(-1px); box-shadow: 0 8px 26px rgba(168, 85, 247, .5); }
+  button:active { transform: translateY(0); }
+  button:disabled { opacity: .5; cursor: wait; transform: none; }
+  button.ghost {
+    background: rgba(97, 92, 237, .08); color: var(--lavender);
+    border: 1px solid var(--line); box-shadow: none; font-weight: 500;
   }
-  .vbadge[data-l="SILENT"]   { background: rgba(155,177,200,.15); color: var(--muted); }
-  .vbadge[data-l="WATCH"]    { background: rgba(245,207,115,.15); color: var(--gold); }
-  .vbadge[data-l="ALERT"]    { background: rgba(255,146,119,.18); color: var(--coral); }
-  .vbadge[data-l="CRITICAL"] { background: rgba(255,90,90,.22);  color: #ff7a7a; }
+  button.ghost:hover { border-color: var(--line-strong); color: var(--ink); transform: none; }
 
-  .scorebar {
-    height: 10px; border-radius: 999px; background: rgba(6,16,30,.8);
-    border: 1px solid var(--line); overflow: hidden; margin-top: 8px;
-  }
-  .scorebar i { display: block; height: 100%; width: 0;
-    background: linear-gradient(90deg, var(--aqua), var(--gold), var(--coral));
-    transition: width .5s ease; }
-  .scoreline { display: flex; justify-content: space-between; color: var(--muted);
-    font-size: 12px; margin-top: 4px; }
-
-  .agents { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
-  @media (max-width: 560px) { .agents { grid-template-columns: repeat(2, 1fr); } }
-  .agent {
-    border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px;
-    font-size: 12px; color: var(--muted); background: rgba(6,16,30,.5);
-  }
-  .agent b { display: block; font-size: 12px; letter-spacing: .06em; color: var(--paper); }
-  .agent.fired { border-color: rgba(255,146,119,.55); background: rgba(255,146,119,.08); }
-  .agent.fired b { color: var(--coral); }
-
-  .block { margin-top: 14px; font-size: 13px; }
-  .block h3 { margin: 0 0 4px; font-size: 11px; letter-spacing: .14em;
+  /* ── Wolf escalation chips ───────────────────────────────────────── */
+  .wolfhead { margin: 18px 0 8px; font-size: 11px; letter-spacing: .18em;
     text-transform: uppercase; color: var(--muted); }
-  .block p { margin: 0; color: var(--paper); white-space: pre-wrap; }
+  .wolfchips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .wolfchips button {
+    font-size: 12px; padding: 6px 13px; font-weight: 500;
+    background: rgba(97, 92, 237, .08); color: var(--lavender);
+    border: 1px solid var(--line); box-shadow: none;
+  }
+  .wolfchips button b {
+    display: inline-grid; place-items: center; width: 18px; height: 18px;
+    margin-right: 7px; border-radius: 50%; font-size: 10.5px; color: #fff;
+    vertical-align: -3px;
+  }
+  .wolfchips button:hover { border-color: var(--line-strong); transform: none; color: var(--ink); }
+
+  /* ── Verdict ─────────────────────────────────────────────────────── */
+  .verdictrow { display: flex; align-items: center; gap: 16px; margin-top: 22px; flex-wrap: wrap; }
+  .vbadge {
+    padding: 8px 24px; border-radius: 999px; font-weight: 800;
+    letter-spacing: .16em; font-size: 15px; border: 1px solid transparent;
+  }
+  .vbadge[data-l="SILENT"] {
+    color: var(--lavender); border-color: var(--line);
+    background: rgba(196, 181, 253, .07);
+  }
+  .vbadge[data-l="WATCH"] {
+    color: var(--watch); border-color: rgba(251, 191, 36, .4);
+    background: rgba(251, 191, 36, .1);
+    box-shadow: 0 0 22px rgba(251, 191, 36, .18);
+  }
+  .vbadge[data-l="ALERT"] {
+    color: var(--alert); border-color: rgba(251, 146, 60, .45);
+    background: rgba(251, 146, 60, .12);
+    box-shadow: 0 0 26px rgba(251, 146, 60, .25);
+  }
+  .vbadge[data-l="CRITICAL"] {
+    color: #fff; border-color: rgba(244, 63, 94, .6);
+    background: rgba(244, 63, 94, .3);
+    box-shadow: 0 0 30px rgba(244, 63, 94, .45);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    50% { box-shadow: 0 0 44px rgba(244, 63, 94, .75); }
+  }
+  .scoretag { font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 13px; color: var(--lavender); }
+  .scoretag b { color: var(--ink); font-size: 16px; }
+
+  /* score bar with real verdict thresholds */
+  .scorewrap { position: relative; margin-top: 14px; }
+  .scorebar {
+    height: 12px; border-radius: 999px; overflow: hidden;
+    background: rgba(10, 6, 26, .85); border: 1px solid var(--line);
+  }
+  .scorebar i {
+    display: block; height: 100%; width: 0;
+    background: linear-gradient(90deg, var(--indigo), var(--violet), var(--fuchsia), var(--critical));
+    background-size: 400px 100%;
+    transition: width .6s cubic-bezier(.3, .9, .3, 1);
+  }
+  .tick { position: absolute; top: -4px; bottom: -4px; width: 1.5px;
+    background: rgba(196, 181, 253, .5); }
+  .tick span {
+    position: absolute; top: -17px; left: 50%; transform: translateX(-50%);
+    font-size: 9px; letter-spacing: .1em; color: var(--muted); white-space: nowrap;
+  }
+  .scoreline { display: flex; justify-content: space-between; color: var(--muted);
+    font-size: 11px; margin-top: 6px; font-family: ui-monospace, Consolas, monospace; }
+
+  /* ── Agent grid ──────────────────────────────────────────────────── */
+  .agents { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
+  @media (max-width: 620px) { .agents { grid-template-columns: repeat(2, 1fr); } }
+  .agent {
+    display: flex; gap: 10px; align-items: center;
+    border: 1px solid var(--line); border-radius: 13px; padding: 10px 12px;
+    background: rgba(10, 6, 26, .5); transition: all .25s;
+  }
+  .agent .mono-badge {
+    width: 30px; height: 30px; border-radius: 10px; flex: none;
+    display: grid; place-items: center; font-weight: 800; font-size: 13px;
+    background: rgba(97, 92, 237, .15); color: var(--muted);
+    border: 1px solid var(--line);
+  }
+  .agent .txt b { display: block; font-size: 12px; letter-spacing: .06em; color: var(--muted); }
+  .agent .txt span { font-size: 10.5px; color: #6e69a0; }
+  .agent.fired { border-color: rgba(217, 70, 239, .5); background: rgba(168, 85, 247, .1);
+    box-shadow: 0 0 18px rgba(168, 85, 247, .15); }
+  .agent.fired .mono-badge { background: var(--grad); color: #fff; border-color: transparent; }
+  .agent.fired .txt b { color: var(--ink); }
+  .agent.fired .txt span { color: var(--lavender); }
+
+  /* ── Text blocks ─────────────────────────────────────────────────── */
+  .block { margin-top: 18px; font-size: 13.5px; }
+  .block h3 {
+    margin: 0 0 5px; font-size: 10.5px; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--muted); font-weight: 700;
+  }
+  .block p { margin: 0; color: var(--ink); white-space: pre-wrap; }
   .block.dim p { color: var(--muted); }
-  .mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 12px;
-    word-break: break-all; color: var(--blue); }
+  .block.qwenblock {
+    border: 1px solid transparent; border-radius: 13px; padding: 13px 15px;
+    background:
+      linear-gradient(rgba(20, 11, 48, .92), rgba(20, 11, 48, .92)) padding-box,
+      var(--grad) border-box;
+  }
+  .block.qwenblock h3 { background: var(--grad); -webkit-background-clip: text;
+    background-clip: text; color: transparent; }
+  .mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 11.5px; word-break: break-all; color: var(--lavender); }
 
-  .chainstate { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-  .lamp { width: 12px; height: 12px; border-radius: 50%; background: #46617f; }
-  .lamp.ok  { background: var(--aqua);  box-shadow: 0 0 10px rgba(104,227,208,.7); }
-  .lamp.bad { background: var(--coral); box-shadow: 0 0 10px rgba(255,146,119,.7); }
+  /* ── Chain panel ─────────────────────────────────────────────────── */
+  .chainstate { display: flex; align-items: center; gap: 11px; margin-bottom: 16px; }
+  .lamp { width: 13px; height: 13px; border-radius: 50%; background: #453e75; flex: none; }
+  .lamp.ok  { background: var(--ok);       box-shadow: 0 0 14px rgba(74, 222, 128, .8); }
+  .lamp.bad { background: var(--critical); box-shadow: 0 0 14px rgba(244, 63, 94, .8);
+    animation: pulse 1.2s infinite; }
+  #chainText { font-size: 13px; color: var(--lavender); }
 
-  table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
-  th { color: var(--muted); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: 10px; }
-  td.mono { font-size: 11px; }
-  tr:last-child td { border-bottom: none; }
+  .blocks { display: flex; align-items: center; gap: 0; overflow-x: auto;
+    padding: 6px 2px 12px; scrollbar-width: thin; }
+  .blk {
+    flex: none; border: 1px solid var(--line); border-radius: 10px;
+    padding: 7px 10px; background: rgba(10, 6, 26, .6); text-align: center;
+  }
+  .blk .h { font-family: ui-monospace, Consolas, monospace; font-size: 10px; color: var(--lavender); }
+  .blk .a { font-size: 9px; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
+  .blk-link { flex: none; width: 18px; height: 1.5px;
+    background: linear-gradient(90deg, var(--indigo), var(--fuchsia)); }
 
-  .footer { margin-top: 26px; color: var(--muted); font-size: 12px; text-align: center; }
-  .footer b { color: var(--aqua); }
-  .err { color: var(--coral); font-size: 13px; margin-top: 10px; white-space: pre-wrap; }
+  .traces { margin-top: 4px; }
+  .tr-row {
+    display: flex; align-items: center; gap: 10px; padding: 9px 4px;
+    border-bottom: 1px solid rgba(167, 139, 250, .12); font-size: 12.5px;
+  }
+  .tr-row:last-child { border-bottom: none; }
+  .tr-agent { flex: none; width: 96px; color: var(--lavender); font-weight: 600;
+    font-size: 11px; letter-spacing: .06em; }
+  .tr-dec { flex: 1; min-width: 0; color: var(--muted); white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; }
+  .q {
+    flex: none; font-size: 9.5px; letter-spacing: .1em; padding: 3px 9px;
+    border-radius: 999px; border: 1px solid var(--line); color: var(--muted);
+  }
+  .q.FULL    { color: var(--ok); border-color: rgba(74, 222, 128, .4); }
+  .q.PARTIAL { color: var(--watch); border-color: rgba(251, 191, 36, .35); }
+
+  .footer { margin-top: 30px; color: var(--muted); font-size: 12.5px; text-align: center; }
+  .footer b { background: var(--grad); -webkit-background-clip: text;
+    background-clip: text; color: transparent; font-weight: 700; }
+  .err { color: var(--critical); font-size: 13px; margin-top: 12px; white-space: pre-wrap; }
   .hidden { display: none; }
+
+  #result { animation: rise .45s ease; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
 </style>
 </head>
 <body>
 <main>
   <header>
-    <h1><b>CORVUS</b> × <b>CRONOS</b> — Live Console</h1>
-    <span class="sub">sealed verdicts · tamper-evident chain · Qwen narration</span>
-    <span id="conn">connecting…</span>
+    <div class="mark">C×C</div>
+    <div class="wordmark">
+      <h1>CORVUS <span class="x">×</span> CRONOS</h1>
+      <div class="sub">Six frameworks read every message. No single one can raise the alarm alone.</div>
+    </div>
+    <div class="pills">
+      <span class="pill qwen">narrated by <b>Qwen</b> · DashScope</span>
+      <span class="pill" id="conn">connecting…</span>
+    </div>
   </header>
 
   <div class="grid">
     <!-- ── Left: analyze ─────────────────────────────────────────── -->
     <section class="panel">
-      <h2>Analyze a message</h2>
-      <textarea id="text" placeholder="Paste any message. Try to sound benign while manipulating — or manipulative while harmless. Six frameworks read it in parallel; no single one can raise the alarm alone."></textarea>
+      <h2>Analyze a message <small>— the verdict seals before any model speaks</small></h2>
+      <textarea id="text" placeholder="Paste any message. Try to sound benign while manipulating — or manipulative while harmless. Six independent frameworks read it in parallel; a corroboration gate demands at least two agree before anything escalates."></textarea>
       <div class="row">
         <input id="userId" value="gauntlet" title="user_id — baselines and the drip-feed window are per user">
         <select id="lang" title="narration language">
@@ -162,22 +329,28 @@
         <button id="send">Analyze</button>
       </div>
 
+      <div class="wolfhead">The Wolf — replay the five-message escalation</div>
       <div class="wolfchips" id="wolf"></div>
       <div class="err hidden" id="error"></div>
 
       <div id="result" class="hidden">
-        <div class="row" style="margin-top:18px">
+        <div class="verdictrow">
           <span class="vbadge" id="verdict" data-l="SILENT">SILENT</span>
-          <span class="mono" id="scoreExact"></span>
+          <span class="scoretag">score <b id="scorePctBig"></b> · exact <span id="scoreExact"></span></span>
         </div>
-        <div class="scorebar"><i id="scoreFill"></i></div>
-        <div class="scoreline"><span>0</span><span id="scorePct"></span><span>100</span></div>
+        <div class="scorewrap">
+          <div class="scorebar"><i id="scoreFill"></i></div>
+          <div class="tick" style="left:20%"><span>WATCH</span></div>
+          <div class="tick" style="left:45%"><span>ALERT</span></div>
+          <div class="tick" style="left:75%"><span>CRITICAL</span></div>
+        </div>
+        <div class="scoreline"><span>0</span><span>Fraction-exact — no floats in the sealed path</span><span>100</span></div>
 
         <div class="agents" id="agents"></div>
 
         <div class="block"><h3>Recommendation</h3><p id="reco"></p></div>
         <div class="block dim"><h3>Devil's advocate — the system argues against itself</h3><p id="devil"></p></div>
-        <div class="block"><h3 id="narrTitle">Qwen narration</h3><p id="narration"></p></div>
+        <div class="block qwenblock"><h3 id="narrTitle">Qwen narration</h3><p id="narration"></p></div>
         <div class="block dim">
           <h3>Chain of custody</h3>
           <p class="mono" id="hashes"></p>
@@ -187,19 +360,17 @@
 
     <!-- ── Right: chain ──────────────────────────────────────────── -->
     <section class="panel">
-      <h2>CRONOS chain</h2>
+      <h2>CRONOS chain <small>— tamper-evident, SHA-256 linked</small></h2>
       <div class="chainstate">
         <span class="lamp" id="chainLamp"></span>
         <span id="chainText">not verified yet</span>
         <button class="ghost" id="reverify" style="margin-left:auto">Verify</button>
       </div>
-      <table>
-        <thead><tr><th>Agent</th><th>Decision</th><th>Quality</th></tr></thead>
-        <tbody id="traceRows"><tr><td colspan="3" style="color:var(--muted)">no traces loaded</td></tr></tbody>
-      </table>
+      <div class="blocks" id="blocks"></div>
+      <div class="traces" id="traceRows"></div>
 
-      <h2 style="margin-top:22px">Connection</h2>
-      <div class="row">
+      <h2 style="margin-top:26px">Connection</h2>
+      <div class="row" style="margin-top:0">
         <input id="apiBase" placeholder="API base (default: this origin)">
         <input id="apiToken" placeholder="X-API-Token (if required)" type="password">
         <button class="ghost" id="reconnect">Connect</button>
@@ -218,20 +389,21 @@
 
 /* ── The Wolf's canned escalation (same as scripts/showcase.py) ───────── */
 const WOLF = [
-  ["Wolf 1 — rapport", "Hi Anna! Great meeting you at the audit-tech conference last week. Your talk on tamper-evident logs was excellent. Would love to stay in touch."],
-  ["Wolf 2 — flattery", "You're honestly one of the very few people who truly understands this space. That's exactly why I thought of you first for something special."],
-  ["Wolf 3 — scarcity + secrecy", "Between us — there's a private allocation round closing soon. Only insiders know about it. I can get you in, but you'd have to move quickly before it's shut down."],
-  ["Wolf 4 — authority + proof", "I've been advising funds for 15 years, so trust me on this. Everyone in your network has already committed. You don't want to be the only one left out when this becomes public."],
-  ["Wolf 5 — urgency + guilt", "After everything I've shared with you, the least you can do is act now. Wire the deposit in the next 2 hours or you lose the slot forever. Think about your future — are you really willing to gamble everything away?"],
+  ["rapport", "Hi Anna! Great meeting you at the audit-tech conference last week. Your talk on tamper-evident logs was excellent. Would love to stay in touch."],
+  ["flattery", "You're honestly one of the very few people who truly understands this space. That's exactly why I thought of you first for something special."],
+  ["scarcity + secrecy", "Between us — there's a private allocation round closing soon. Only insiders know about it. I can get you in, but you'd have to move quickly before it's shut down."],
+  ["authority + proof", "I've been advising funds for 15 years, so trust me on this. Everyone in your network has already committed. You don't want to be the only one left out when this becomes public."],
+  ["urgency + guilt", "After everything I've shared with you, the least you can do is act now. Wire the deposit in the next 2 hours or you lose the slot forever. Think about your future — are you really willing to gamble everything away?"],
 ];
+const CHIP_COLORS = ["#615ced", "#7d5cf0", "#a855f7", "#c44df2", "#f43f5e"];
 
 const AGENT_META = {
-  L1_GRICE:      ["L1 Grice", "cooperative maxims"],
-  L2_CARNEGIE:   ["L2 Influence", "Carnegie + Cialdini"],
-  L3_ARISTOTLE:  ["L3 Rhetoric", "ethos / pathos / logos"],
-  L4_BERNE:      ["L4 Berne", "ego states"],
-  L5_LINGUISTIC: ["L5 Linguistics", "register + load"],
-  L6_PEIRCE:     ["L6 Peirce", "abductive synthesis"],
+  L1_GRICE:      ["G", "L1 Grice", "cooperative maxims"],
+  L2_CARNEGIE:   ["C", "L2 Influence", "Carnegie + Cialdini"],
+  L3_ARISTOTLE:  ["A", "L3 Rhetoric", "ethos / pathos / logos"],
+  L4_BERNE:      ["B", "L4 Berne", "ego states"],
+  L5_LINGUISTIC: ["L", "L5 Linguistics", "register + load"],
+  L6_PEIRCE:     ["P", "L6 Peirce", "abductive synthesis"],
 };
 
 const $ = (id) => document.getElementById(id);
@@ -259,14 +431,14 @@ async function api(path, options = {}) {
 /* ── Connection ───────────────────────────────────────────────────────── */
 async function connect() {
   const conn = $("conn");
-  conn.className = ""; conn.textContent = "connecting…";
+  conn.className = "pill"; conn.textContent = "connecting…";
   try {
     const h = await api("/health");
-    conn.className = "ok";
+    conn.className = "pill ok";
     conn.textContent = `API ok · narration ${h.qwen_narration} · auth ${h.auth}`;
     refreshChain();
   } catch (e) {
-    conn.className = "bad";
+    conn.className = "pill bad";
     conn.textContent = "API unreachable — " + e.message;
   }
 }
@@ -300,16 +472,18 @@ function render(d) {
   $("result").classList.remove("hidden");
   const v = $("verdict");
   v.dataset.l = d.verdict; v.textContent = d.verdict;
-  $("scoreExact").textContent = "score " + d.score.exact;
+  $("scoreExact").textContent = d.score.exact;
+  $("scorePctBig").textContent = d.score.percent + "%";
   $("scoreFill").style.width = d.score.percent + "%";
-  $("scorePct").textContent = d.score.percent + "%";
 
   const grid = $("agents"); grid.innerHTML = "";
-  for (const [key, [name, desc]] of Object.entries(AGENT_META)) {
+  for (const [key, [mono, name, desc]] of Object.entries(AGENT_META)) {
     const fired = d.active_agents.includes(key);
     const el = document.createElement("div");
     el.className = "agent" + (fired ? " fired" : "");
-    el.innerHTML = `<b>${name}</b>${fired ? "FIRED — " : ""}${desc}`;
+    el.innerHTML =
+      `<div class="mono-badge">${mono}</div>` +
+      `<div class="txt"><b>${name}</b><span>${fired ? "FIRED — " : ""}${desc}</span></div>`;
     grid.appendChild(el);
   }
 
@@ -318,20 +492,18 @@ function render(d) {
 
   const n = d.narration || {};
   if (n.text) {
-    $("narrTitle").textContent = `Qwen narration (${n.lang}, ${n.model})`;
+    $("narrTitle").textContent = `Qwen narration — ${n.model} (${n.lang})`;
     $("narration").textContent = n.text;
-    $("narration").parentElement.classList.remove("dim");
   } else {
     $("narrTitle").textContent = "Qwen narration";
     $("narration").textContent = n.note || "narration not requested";
-    $("narration").parentElement.classList.add("dim");
   }
 
   $("hashes").textContent =
     `signal  ${d.audit.signal_hash}\n` +
     `verdict ${d.audit.verdict_hash}\n` +
     `chain   ${d.audit.chain_valid ? "VALID" : "BROKEN"} · ` +
-    `${Object.keys(d.audit.trace_ids).length} traces this analysis`;
+    `${Object.keys(d.audit.trace_ids).length} traces sealed this analysis`;
 }
 
 /* ── Chain panel ──────────────────────────────────────────────────────── */
@@ -342,15 +514,32 @@ async function refreshChain() {
     $("chainText").textContent = v.chain_ok
       ? "chain verified — every hash links"
       : "CHAIN BROKEN: " + (v.errors || []).join("; ");
+
     const t = await api("/traces?limit=8");
-    const rows = t.traces.map((tr) => {
-      const dec = (tr.decision || "—");
-      return `<tr><td>${tr.agent_id || "—"}</td>` +
-             `<td>${dec.length > 42 ? dec.slice(0, 41) + "…" : dec}</td>` +
-             `<td>${tr.quality || "—"}</td></tr>`;
+    const traces = t.traces || [];
+
+    const blk = $("blocks"); blk.innerHTML = "";
+    traces.slice().reverse().forEach((tr, i) => {
+      if (i > 0) {
+        const link = document.createElement("div");
+        link.className = "blk-link"; blk.appendChild(link);
+      }
+      const b = document.createElement("div");
+      b.className = "blk";
+      const h = (tr.entry_hash || tr.trace_id || "").slice(0, 8);
+      b.innerHTML = `<div class="h">${h || "········"}</div>` +
+                    `<div class="a">${(tr.agent_id || "—").replace("L", "L").slice(0, 10)}</div>`;
+      blk.appendChild(b);
     });
-    $("traceRows").innerHTML = rows.join("") ||
-      `<tr><td colspan="3" style="color:var(--muted)">chain is empty</td></tr>`;
+
+    $("traceRows").innerHTML = traces.map((tr) => {
+      const dec = tr.decision || "—";
+      const conf = tr.confidence || "—";
+      return `<div class="tr-row">` +
+             `<span class="tr-agent">${tr.agent_id || "—"}</span>` +
+             `<span class="tr-dec" title="${dec.replace(/"/g, "&quot;")}">${dec}</span>` +
+             `<span class="q" title="stored confidence (Fraction-exact)">${conf}</span></div>`;
+    }).join("") || `<div class="tr-row"><span class="tr-dec">chain is empty — analyze something</span></div>`;
   } catch (e) {
     $("chainLamp").className = "lamp bad";
     $("chainText").textContent = "verify failed — " + e.message;
@@ -359,9 +548,9 @@ async function refreshChain() {
 
 /* ── Wire up ──────────────────────────────────────────────────────────── */
 const wolfBox = $("wolf");
-WOLF.forEach(([label, text]) => {
+WOLF.forEach(([label, text], i) => {
   const b = document.createElement("button");
-  b.className = "ghost"; b.textContent = label;
+  b.innerHTML = `<b style="background:${CHIP_COLORS[i]}">${i + 1}</b>${label}`;
   b.title = text;
   b.onclick = () => { $("text").value = text; $("userId").value = "wolf"; analyze(text); };
   wolfBox.appendChild(b);
