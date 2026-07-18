@@ -22,7 +22,7 @@ from fractions import Fraction
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 for _lib in ("corvus", "cronos"):
-    _p = os.path.abspath(os.path.join(_ROOT, "..", _lib))
+    _p = os.path.abspath(os.path.join(_ROOT, _lib))
     if _p not in sys.path:
         sys.path.insert(0, _p)
 

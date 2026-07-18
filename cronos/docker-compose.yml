@@ -1,0 +1,20 @@
+services:
+  cronos:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - cronos_data:/data/cronos
+    environment:
+      - CRONOS_DB_PATH=/data/cronos/cronos.db
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sqlite3, os; sqlite3.connect(os.environ['CRONOS_DB_PATH']).execute('SELECT 1')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  cronos_data:
+    driver: local
