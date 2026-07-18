@@ -516,6 +516,110 @@ const I18N = {
 let LANG = localStorage.getItem("ccx_lang") || "en";
 const T = () => I18N[LANG];
 
+/* ── Engine-prose translation ─────────────────────────────────────────────
+   The deterministic engine writes its recommendation, devil's-advocate
+   counter-case, and offline note in English — that English text is what
+   the hashes seal. For readability the console translates it client-side
+   by matching the engine's own templates; anything unrecognized falls
+   back to the sealed English verbatim. */
+const FW_T = {
+  "Grice Cooperative Principle": { es: "Principio Cooperativo de Grice", zh: "格赖斯合作原则" },
+  "Carnegie/Cialdini Influence Detection": { es: "Detección de influencia Carnegie/Cialdini", zh: "卡内基/西奥迪尼影响力检测" },
+  "Aristotelian Rhetoric Imbalance": { es: "Desequilibrio retórico aristotélico", zh: "亚里士多德修辞失衡" },
+  "Berne Transactional Analysis": { es: "Análisis transaccional de Berne", zh: "伯恩沟通分析" },
+  "Linguistic Complexity & Register": { es: "Complejidad lingüística y registro", zh: "语言复杂度与语域" },
+};
+const MAXIM_T = {
+  RELATION: { es: "RELACIÓN", zh: "关联" }, QUANTITY: { es: "CANTIDAD", zh: "数量" },
+  QUALITY: { es: "CALIDAD", zh: "质量" }, MANNER: { es: "MODO", zh: "方式" },
+};
+function fwList(s, lang, sep) {
+  return s.split(/,\s+|\s+and\s+/).map((f) => (FW_T[f] || {})[lang] || f).join(sep);
+}
+function xHyp(h, lang) {
+  const g = h.match(/^Isolated Gricean violation of maxim (\w+): Topic drift: only (\d+)% vocabulary overlap between halves$/);
+  if (g) {
+    const mx = (MAXIM_T[g[1]] || {})[lang] || g[1];
+    return lang === "es"
+      ? `Violación griceana aislada de la máxima ${mx}: deriva temática — solo ${g[2]}% de superposición de vocabulario entre mitades`
+      : `孤立违反格赖斯${mx}准则：话题漂移 — 前后两半词汇重叠仅 ${g[2]}%`;
+  }
+  if (h === "Deliberate obfuscation to embed influence: the message uses complex language to hide manipulation tactics, making the attempt harder to consciously identify.") {
+    return lang === "es"
+      ? "Ofuscación deliberada para incrustar influencia: el mensaje usa lenguaje complejo para ocultar tácticas de manipulación, dificultando su identificación consciente."
+      : "蓄意混淆以嵌入影响力：该消息使用复杂语言掩盖操纵话术，使其更难被有意识地识别。";
+  }
+  return h;   // unknown hypothesis template — keep sealed English
+}
+function xDevil(d, lang) {
+  if (lang === "en") return d;
+  if (d === "No layer detected any signal. The strongest benign explanation: text is fully cooperative, expressive, and contextually normal across all five rhetorical dimensions examined.") {
+    return lang === "es"
+      ? "Ninguna capa detectó señal alguna. La explicación benigna más fuerte: el texto es plenamente cooperativo, expresivo y contextualmente normal en las cinco dimensiones retóricas examinadas."
+      : "没有任何层检测到信号。最强的良性解释：该文本在所审查的五个修辞维度上完全合作、富有表达力且符合语境。";
+  }
+  let m = d.match(/^Peirce synthesis concluded '([\s\S]+)' based on (\d)\/5 active layers \(([\s\S]+?)\)\. However, (\d) layer\(s\) found no anomaly: ([\s\S]+?)\. The strongest counter-hypothesis:[\s\S]+WATCH rather than ALERT without additional behavioral context\.$/);
+  if (m) {
+    const hyp = xHyp(m[1], lang), act = fwList(m[3], lang, lang === "es" ? ", " : "、"), sil = fwList(m[5], lang, lang === "es" ? " y " : "、");
+    return lang === "es"
+      ? `La síntesis de Peirce concluyó "${hyp}" sobre la base de ${m[2]}/5 capas activas (${act}). Sin embargo, ${m[4]} capa(s) no encontraron anomalías: ${sil}. La contrahipótesis más fuerte: las capas activas pueden haber disparado por rasgos léxicos superficiales (marcadores de urgencia, apelaciones a la autoridad, lenguaje emocional) que también aparecen en comunicación legítima de alto riesgo — avisos legales, alertas médicas, gestión de crisis. Las dimensiones silenciosas sugieren que la estructura transaccional y el registro lingüístico no se desvían de la línea base, lo cual es inconsistente con una manipulación sistemática. Este hallazgo debería tratarse como WATCH y no como ALERT sin contexto conductual adicional.`
+      : `皮尔士综合基于 ${m[2]}/5 个活跃层（${act}）得出结论："${hyp}"。然而，${m[4]} 个层未发现异常：${sil}。最强的反假设：活跃层可能是被表层词汇特征（紧迫感标记、权威声明、情绪化语言）触发，这些特征同样出现在合法的高风险沟通中 — 法律通知、医疗提示、危机管理。沉默的维度表明底层交流结构与语域并未偏离基线，这与系统性操纵不符。在缺乏更多行为背景的情况下，该发现应视为 WATCH 而非 ALERT。`;
+  }
+  m = d.match(/^Only (\d)\/5 layer\(s\) detected anomalies \(([\s\S]+?)\)\. The corroboration gate requires >= 2 independent signals; (\d) layer\(s\) found nothing \(([\s\S]+?)\)\.[\s\S]+not confirmed\.$/);
+  if (m) {
+    const act = fwList(m[2], lang, lang === "es" ? ", " : "、"), sil = fwList(m[4], lang, lang === "es" ? " y " : "、");
+    return lang === "es"
+      ? `Solo ${m[1]}/5 capa(s) detectaron anomalías (${act}). La puerta de corroboración exige >= 2 señales independientes; ${m[3]} capa(s) no encontraron nada (${sil}). Alternativa benigna más fuerte: el texto usa lenguaje enfático o persuasivo que superficialmente se parece a la manipulación pero es contextualmente legítimo — registro expresivo, no explotación deliberada. Sin convergencia entre capas, la hipótesis de manipulación no queda confirmada.`
+      : `仅有 ${m[1]}/5 个层检测到异常（${act}）。协作门要求 >= 2 个独立信号；${m[3]} 个层未发现任何异常（${sil}）。最强的良性解释：文本使用的强调或说服性语言表面上类似操纵，但在语境中是合法的 — 是表达性语域，而非蓄意利用。缺乏跨层收敛，操纵假设不能成立。`;
+  }
+  m = d.match(/^All five analytical layers corroborate '([\s\S]+)'\.[\s\S]+human review before acting on it\.$/);
+  if (m) {
+    const hyp = xHyp(m[1], lang);
+    return lang === "es"
+      ? `Las cinco capas analíticas corroboran "${hyp}". El contraargumento más fuerte disponible: la activación simultánea de todas las capas es posible en contextos intensos pero legítimos (negociación, activismo, ventas, discurso político) donde la intensidad es intencional y no engañosa. El sistema no puede distinguir la intención del efecto — un texto persuasivo y uno manipulador pueden producir perfiles de señal idénticos. Este veredicto requiere revisión humana antes de actuar.`
+      : `全部五个分析层都佐证了"${hyp}"。可用的最强反驳：在激烈但合法的场景（谈判、倡导、销售、政治演说）中，所有层同时激活是可能的，其强度是有意为之而非欺骗。系统无法区分意图与效果 — 有说服力的文本与操纵性文本可能产生完全相同的信号轮廓。该裁决在采取行动前需要人工复核。`;
+  }
+  return d;
+}
+function xReco(r, lang) {
+  if (lang === "en") return r;
+  const M = {
+    "No action required. Baseline updated.": {
+      es: "No se requiere acción. Línea base actualizada.",
+      zh: "无需采取行动。基线已更新。" },
+    "Monitor this user's subsequent messages. Flagged for security-team review.": {
+      es: "Monitorear los próximos mensajes de este usuario. Marcado para revisión del equipo de seguridad.",
+      zh: "持续关注该用户的后续消息。已标记供安全团队复核。" },
+    "CRITICAL THREAT. Immediately escalate to security team. Do NOT comply with any requests in this message. Message pinned and evidence bundle sealed. Initiate incident response protocol.": {
+      es: "AMENAZA CRÍTICA. Escalá de inmediato al equipo de seguridad. NO cumplas ningún pedido de este mensaje. Mensaje fijado y paquete de evidencia sellado. Iniciá el protocolo de respuesta a incidentes.",
+      zh: "严重威胁。立即上报安全团队。切勿执行该消息中的任何请求。消息已固定，证据包已密封。启动事件响应流程。" },
+  };
+  if (M[r]) return M[r][lang];
+  const alertBase = "Security team alerted. Treat any requests from this user with caution. Do not share credentials, transfer funds, or install software. ";
+  if (r.startsWith(alertBase)) {
+    let out = lang === "es"
+      ? "Equipo de seguridad alertado. Tratá cualquier pedido de este usuario con cautela. No compartas credenciales, no transfieras fondos ni instales software. "
+      : "已通知安全团队。请谨慎对待该用户的任何请求。不要共享凭据、转账或安装软件。";
+    if (r.includes("Ulterior transaction detected")) {
+      out += lang === "es"
+        ? "Nota: transacción ulterior detectada — la intención declarada puede diferir de la real."
+        : "注意：检测到隐蔽交易 — 声称的意图可能与真实意图不同。";
+    }
+    return out;
+  }
+  return r;
+}
+function xNote(n, lang) {
+  if (lang === "en" || !n) return n;
+  if (n.startsWith("Narration offline")) {
+    return lang === "es"
+      ? "Narración offline — DASHSCOPE_API_KEY no está configurada. El veredicto sellado de abajo está completo sin ella."
+      : "叙述离线 — 未配置 DASHSCOPE_API_KEY。下方的密封裁决无需它也是完整的。";
+  }
+  return n;
+}
+const X_MARK = { es: " (traducido del original sellado en inglés)", zh: "（译自密封的英文原文）" };
+
 /* ── The Wolf's canned escalation (same as scripts/showcase.py) ───────── */
 const WOLF_TEXTS = [
   "Hi Anna! Great meeting you at the audit-tech conference last week. Your talk on tamper-evident logs was excellent. Would love to stay in touch.",
@@ -654,8 +758,10 @@ function render(d) {
     grid.appendChild(el);
   }
 
-  $("reco").textContent = d.recommendation;
-  $("devil").textContent = d.devils_advocate;
+  $("reco").textContent = xReco(d.recommendation, LANG);
+  const devil = xDevil(d.devils_advocate, LANG);
+  $("devil").textContent = devil +
+    (LANG !== "en" && devil !== d.devils_advocate ? X_MARK[LANG] : "");
 
   const n = d.narration || {};
   if (n.text) {
@@ -663,7 +769,7 @@ function render(d) {
     $("narration").textContent = n.text;
   } else {
     $("narrTitle").textContent = t.narrTitle;
-    $("narration").textContent = n.note || t.narrNone;
+    $("narration").textContent = xNote(n.note, LANG) || t.narrNone;
   }
 
   $("hashes").textContent =
