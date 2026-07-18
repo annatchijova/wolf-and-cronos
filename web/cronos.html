@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRONOS — Black Box Recorder for AI Agents</title>
+<style>
+  /* ── Qwen palette: indigo → violet → fuchsia ─────────────────────── */
+  :root {
+    --bg0: #0a0618;
+    --bg1: #140b30;
+    --panel: rgba(32, 22, 66, .58);
+    --line: rgba(167, 139, 250, .22);
+    --line-strong: rgba(167, 139, 250, .45);
+    --ink: #f3f0ff;
+    --muted: #8f8ab8;
+    --lavender: #c4b5fd;
+    --indigo: #615ced;
+    --violet: #a855f7;
+    --fuchsia: #d946ef;
+    --grad: linear-gradient(135deg, #615ced 0%, #a855f7 55%, #d946ef 100%);
+    --ok: #4ade80;
+    --watch: #fbbf24;
+    --critical: #f43f5e;
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--ink);
+    font: clamp(15px, 0.55vw + 11px, 19px)/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+    background:
+      radial-gradient(ellipse 60rem 34rem at 12% -6%, rgba(97, 92, 237, .28), transparent),
+      radial-gradient(ellipse 50rem 30rem at 100% 8%, rgba(217, 70, 239, .16), transparent),
+      radial-gradient(ellipse 44rem 30rem at 50% 110%, rgba(168, 85, 247, .14), transparent),
+      linear-gradient(180deg, var(--bg1), var(--bg0) 40%);
+    background-attachment: fixed;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none;
+    background-image: radial-gradient(rgba(196, 181, 253, .08) 1px, transparent 1px);
+    background-size: 26px 26px;
+    mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
+  }
+  main { position: relative; width: min(96vw, 1780px); margin: 0 auto; padding: 34px 24px 70px; }
+
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-bottom: 24px; }
+  .mark {
+    width: 56px; height: 56px; border-radius: 16px; background: var(--grad);
+    display: grid; place-items: center; font-weight: 800; font-size: 22px;
+    color: #fff;
+    box-shadow: 0 6px 24px rgba(168, 85, 247, .45), inset 0 1px 0 rgba(255,255,255,.35);
+  }
+  .wordmark h1 { margin: 0; font-size: clamp(21px, 1.4vw + 8px, 30px); letter-spacing: .05em; font-weight: 700; }
+  .wordmark h1 .g {
+    background: var(--grad); -webkit-background-clip: text; background-clip: text;
+    color: transparent; font-weight: 800;
+  }
+  .wordmark .sub { color: var(--muted); font-size: clamp(12.5px, 0.5vw + 9px, 16px); letter-spacing: .04em; }
+  .pills { margin-left: auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .pill {
+    font-size: 11.5px; letter-spacing: .08em; padding: 6px 14px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--lavender); white-space: nowrap;
+    text-decoration: none;
+  }
+  a.pill:hover { border-color: var(--line-strong); color: var(--ink); }
+  .pill.qwen {
+    border: 1px solid transparent;
+    background:
+      linear-gradient(var(--bg1), var(--bg1)) padding-box,
+      var(--grad) border-box;
+  }
+  .pill.qwen b { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  .langs { display: flex; gap: 4px; border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+  .langs button {
+    background: transparent; border: none; color: var(--muted); cursor: pointer;
+    font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 999px;
+    font-family: inherit;
+  }
+  .langs button:hover { color: var(--ink); }
+  .langs button.on { background: var(--grad); color: #fff; }
+
+  .panel {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 18px 50px rgba(6, 2, 24, .5);
+    margin-bottom: 24px;
+  }
+  .panel::before {
+    content: ""; position: absolute; top: 0; left: 18px; right: 18px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(168,85,247,.7), transparent);
+  }
+  .panel h2 {
+    margin: 0 0 16px; font-size: clamp(11.5px, 0.4vw + 9px, 14px); letter-spacing: .22em;
+    text-transform: uppercase; color: var(--muted); font-weight: 700;
+  }
+  .panel h2 small { color: var(--muted); font-weight: 400; letter-spacing: .05em; text-transform: none; }
+
+  .lead { font-size: clamp(15px, 0.6vw + 11px, 20px); line-height: 1.7; margin: 0; }
+  .lead b { background: var(--grad); -webkit-background-clip: text; background-clip: text;
+    color: transparent; font-weight: 700; }
+  .lead + .lead { margin-top: 12px; }
+
+  /* flow diagram */
+  .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 22px 0 6px; }
+  .step {
+    border: 1px solid var(--line); border-radius: 12px; padding: 9px 14px;
+    background: rgba(10, 6, 26, .6); text-align: center;
+  }
+  .step .t { font-family: ui-monospace, Consolas, monospace; color: var(--lavender);
+    font-size: clamp(11px, 0.4vw + 8px, 14px); }
+  .step .d { font-size: clamp(9.5px, 0.3vw + 7px, 11.5px); color: var(--muted); }
+  .step.seal { border-color: transparent;
+    background:
+      linear-gradient(rgba(20, 11, 48, .92), rgba(20, 11, 48, .92)) padding-box,
+      var(--grad) border-box; }
+  .step.seal .t { background: var(--grad); -webkit-background-clip: text;
+    background-clip: text; color: transparent; font-weight: 700; }
+  .arrow { color: var(--violet); font-size: 16px; }
+
+  pre.code {
+    background: rgba(10, 6, 26, .85); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 18px; overflow-x: auto; margin: 14px 0 0;
+    font: clamp(11.5px, 0.4vw + 9px, 14px)/1.55 ui-monospace, "Cascadia Code", Consolas, monospace;
+    color: var(--lavender);
+  }
+  pre.code .k { color: var(--fuchsia); }
+  pre.code .s { color: #9ae6b4; }
+  .clients { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .client { font-size: 12px; padding: 5px 13px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--lavender); }
+  .client.live { border-color: rgba(74, 222, 128, .4); color: var(--ok); }
+
+  /* report chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .chips button {
+    cursor: pointer; font-family: inherit;
+    font-size: clamp(12px, 0.4vw + 9px, 15px); padding: 8px 16px; font-weight: 500;
+    background: rgba(97, 92, 237, .08); color: var(--lavender);
+    border: 1px solid var(--line); border-radius: 12px;
+    transition: border-color .15s, color .15s;
+  }
+  .chips button:hover { border-color: var(--line-strong); color: var(--ink); }
+  .chips button.on { border-color: var(--fuchsia); color: var(--ink);
+    box-shadow: 0 0 14px rgba(217, 70, 239, .25); }
+
+  /* report rendering */
+  .rmeta { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 10px; margin-bottom: 18px; }
+  .rm {
+    border: 1px solid var(--line); border-radius: 12px; padding: 10px 13px;
+    background: rgba(10, 6, 26, .5);
+  }
+  .rm b { display: block; font-size: 10px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 3px; }
+  .rm span { font-size: clamp(12px, 0.4vw + 9px, 14.5px); color: var(--ink);
+    word-break: break-all; }
+  .rm span.mono { font-family: ui-monospace, Consolas, monospace; color: var(--lavender); }
+  .rm.hl { border-color: transparent;
+    background:
+      linear-gradient(rgba(20, 11, 48, .92), rgba(20, 11, 48, .92)) padding-box,
+      var(--grad) border-box; }
+
+  .rsec { margin-top: 20px; }
+  .rsec h3 { margin: 0 0 8px; font-size: clamp(10.5px, 0.35vw + 8px, 13px);
+    letter-spacing: .18em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .rsec p { margin: 0; font-size: clamp(13px, 0.45vw + 10px, 16px); color: var(--ink); }
+
+  .timeline { border-left: 2px solid rgba(168, 85, 247, .35); margin-left: 8px;
+    padding-left: 18px; display: flex; flex-direction: column; gap: 12px; }
+  .tl {
+    position: relative; font-size: clamp(12.5px, 0.4vw + 9.5px, 15px); color: var(--muted);
+  }
+  .tl::before {
+    content: ""; position: absolute; left: -24.5px; top: 7px; width: 11px; height: 11px;
+    border-radius: 50%; background: var(--bg1); border: 2px solid var(--violet);
+  }
+  .tl.hyp::before   { border-color: var(--watch); }
+  .tl.disc::before  { border-color: var(--critical); }
+  .tl.seal::before  { background: var(--grad); border-color: transparent; }
+  .tl b { color: var(--lavender); font-family: ui-monospace, Consolas, monospace;
+    font-size: .92em; }
+  .tl .when { color: #5e5a86; font-size: .85em; margin-left: 6px; }
+
+  table.hyps { width: 100%; border-collapse: collapse;
+    font-size: clamp(12px, 0.4vw + 9px, 14.5px); }
+  table.hyps th, table.hyps td { text-align: left; padding: 8px 10px;
+    border-bottom: 1px solid rgba(167, 139, 250, .12); }
+  table.hyps th { color: var(--muted); font-size: 10px; letter-spacing: .14em;
+    text-transform: uppercase; }
+  table.hyps td:first-child { font-family: ui-monospace, Consolas, monospace;
+    color: var(--lavender); font-size: .92em; }
+  .st { font-size: 10px; letter-spacing: .1em; padding: 3px 10px; border-radius: 999px;
+    border: 1px solid var(--line); white-space: nowrap; }
+  .st.ok   { color: var(--ok); border-color: rgba(74, 222, 128, .4); }
+  .st.disc { color: var(--critical); border-color: rgba(244, 63, 94, .4); }
+  .st.conf { color: var(--watch); border-color: rgba(251, 191, 36, .4); }
+
+  .decision {
+    border: 1px solid transparent; border-radius: 13px; padding: 14px 16px;
+    background:
+      linear-gradient(rgba(20, 11, 48, .92), rgba(20, 11, 48, .92)) padding-box,
+      var(--grad) border-box;
+    font-size: clamp(13px, 0.45vw + 10px, 16px);
+  }
+  .chainline { font-family: ui-monospace, Consolas, monospace;
+    font-size: clamp(10.5px, 0.35vw + 8px, 13px); color: var(--lavender);
+    word-break: break-all; margin-top: 14px; }
+  .chainline .okword { color: var(--ok); }
+
+  .note {
+    margin-top: 20px; padding: 12px 16px; border-radius: 12px;
+    border: 1px solid var(--line); background: rgba(10, 6, 26, .45);
+    color: var(--muted); font-size: clamp(12.5px, 0.4vw + 9.5px, 15px);
+  }
+  .note b { color: var(--lavender); }
+
+  .footer { margin-top: 30px; color: var(--muted); font-size: 12.5px; text-align: center; }
+  .footer b { background: var(--grad); -webkit-background-clip: text;
+    background-clip: text; color: transparent; font-weight: 700; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="mark">C</div>
+    <div class="wordmark">
+      <h1><span class="g">CRONOS</span></h1>
+      <div class="sub" data-i18n="sub"></div>
+    </div>
+    <div class="pills">
+      <div class="langs" id="langs">
+        <button data-lang="en">EN</button>
+        <button data-lang="es">ES</button>
+        <button data-lang="zh">中文</button>
+      </div>
+      <span class="pill qwen"><span data-i18n="narrates"></span> <b>Qwen</b> · Claude · Codex</span>
+      <a class="pill" href="demo.html" data-i18n="wolfLink"></a>
+    </div>
+  </header>
+
+  <!-- ── What it is ──────────────────────────────────────────────── -->
+  <section class="panel">
+    <p class="lead" data-i18n-html="lead1"></p>
+    <p class="lead" data-i18n-html="lead2"></p>
+  </section>
+
+  <!-- ── How to use it ───────────────────────────────────────────── -->
+  <section class="panel">
+    <h2><span data-i18n="howTitle"></span> <small data-i18n="howSub"></small></h2>
+    <div class="flow">
+      <div class="step"><div class="t">cronos_open_trace</div><div class="d" data-i18n="fOpen"></div></div>
+      <span class="arrow">→</span>
+      <div class="step"><div class="t">cronos_add_hypothesis</div><div class="d" data-i18n="fHyp"></div></div>
+      <span class="arrow">→</span>
+      <div class="step"><div class="t">cronos_add_evidence</div><div class="d" data-i18n="fEv"></div></div>
+      <span class="arrow">→</span>
+      <div class="step"><div class="t">cronos_discard_hypothesis</div><div class="d" data-i18n="fDisc"></div></div>
+      <span class="arrow">→</span>
+      <div class="step seal"><div class="t">cronos_close_trace</div><div class="d" data-i18n="fSeal"></div></div>
+      <span class="arrow">→</span>
+      <div class="step"><div class="t">cronos_verify_chain</div><div class="d" data-i18n="fVerify"></div></div>
+    </div>
+
+    <pre class="code">{
+  <span class="s">"mcpServers"</span>: {
+    <span class="s">"cronos"</span>: {
+      <span class="s">"command"</span>: <span class="s">"python3"</span>,
+      <span class="s">"args"</span>: [<span class="s">"/path/to/wolf-and-cronos/cronos/mcp_server.py"</span>],
+      <span class="s">"env"</span>: { <span class="s">"CRONOS_DB_PATH"</span>: <span class="s">"/path/to/cronos.db"</span> }
+    }
+  }
+}</pre>
+    <div class="clients">
+      <span class="client live" data-i18n="cClaude"></span>
+      <span class="client live" data-i18n="cCodex"></span>
+      <span class="client" data-i18n="cOpencode"></span>
+      <span class="client" data-i18n="cQwenAgent"></span>
+    </div>
+    <p class="rsec" style="margin-top:14px"><span style="color:var(--muted); font-size:clamp(12.5px,0.4vw+9.5px,15px)" data-i18n="qwenPath"></span></p>
+    <pre class="code"><span class="k">from</span> corvus_cronos.qwen_agent <span class="k">import</span> QwenCronosAgent
+
+agent = QwenCronosAgent(db_path=<span class="s">"cronos_qwen.db"</span>)   <span style="color:#5e5a86"># DASHSCOPE_API_KEY</span>
+outcome = agent.run(task=<span class="s">"Diagnose why the nightly export produced 0 rows."</span>)
+<span class="k">print</span>(outcome.sealed_trace_ids, outcome.chain_ok)</pre>
+  </section>
+
+  <!-- ── Real reports ────────────────────────────────────────────── -->
+  <section class="panel">
+    <h2><span data-i18n="repTitle"></span> <small data-i18n="repSub"></small></h2>
+    <div class="chips" id="repChips"></div>
+    <div id="report"></div>
+    <div class="note" data-i18n-html="repNote"></div>
+  </section>
+
+  <div class="footer" id="footerLine"></div>
+</main>
+
+<script>
+"use strict";
+
+/* ── UI translations ──────────────────────────────────────────────────── */
+const I18N = {
+  en: {
+    sub: "The black box recorder for AI agents — every hypothesis, every discard, sealed.",
+    narrates: "narrated by",
+    wolfLink: "The Wolf demo →",
+    lead1: 'An agent that cannot show its reasoning is an agent you cannot audit. <b>CRONOS</b> records the full decision cycle of any AI agent — recalls, tool calls, hypotheses, evidence, discards, and the final decision — into an append-only <b>SHA-256 hash chain</b>. Alter, insert, reorder, or drop any entry and every hash after it breaks.',
+    lead2: 'It is not a logger. At seal time CRONOS computes a <b>quality tier</b> and <b>observational diversity</b> for the trace, and if the evidence base does not support the agent\'s claimed confidence, the stored confidence is <b>capped</b> — the agent cannot claim more certainty than its own recorded evidence earns.',
+    howTitle: "How to use it",
+    howSub: "— ten MCP tools, one discipline",
+    fOpen: "one trace per decision", fHyp: "ALL candidates, not just the winner",
+    fEv: "supports / refutes", fDisc: "as valuable as conclusions",
+    fSeal: "quality + ceiling + hash", fVerify: "any edit breaks the chain",
+    cClaude: "Claude Code — daily use", cCodex: "Codex — daily use",
+    cOpencode: "opencode + DashScope", cQwenAgent: "QwenCronosAgent (this repo)",
+    qwenPath: "Qwen models do not speak MCP — this repo ships a native driver that hands qwen-max the same ten tools via DashScope function calling:",
+    repTitle: "Real reports, from real daily use",
+    repSub: "— verbatim excerpts from sealed traces",
+    repNote: 'These audit trails are <b>real working sessions</b>, not demo fixtures: Claude Code and Codex agents using CRONOS through MCP, day after day. The report prose is narrated by the agent <b>from</b> the sealed trace — the narration layer is model-agnostic. Point opencode at DashScope and <b>Qwen writes the same report</b> from the same sealed trace; the hashes underneath do not move.',
+    objective: "Objective", steps: "Step-by-step trace (excerpt)",
+    hyps: "Hypotheses", decision: "Decision", chain: "Chain of custody",
+    thLabel: "Label", thStatus: "Status", thOutcome: "Outcome",
+    stActive: "ACTIVE", stDiscarded: "DISCARDED", stConfirmed: "CONFIRMED",
+    mTrace: "Trace", mAgent: "Agent", mQuality: "Quality",
+    mConfidence: "Confidence", mDiversity: "Diversity", mChain: "Chain",
+    chainOkWord: "intact",
+    footer: 'Confidence is <b>earned from evidence</b>, never asserted. The chain remembers what the agent would rather forget.',
+  },
+  es: {
+    sub: "La caja negra para agentes de IA — cada hipótesis, cada descarte, sellados.",
+    narrates: "narrado por",
+    wolfLink: "La demo del Lobo →",
+    lead1: 'Un agente que no puede mostrar su razonamiento es un agente que no podés auditar. <b>CRONOS</b> graba el ciclo de decisión completo de cualquier agente de IA — recuerdos, llamadas a herramientas, hipótesis, evidencia, descartes y la decisión final — en una <b>cadena de hashes SHA-256</b> de solo anexado. Alterá, insertá, reordená o borrá cualquier entrada y todos los hashes posteriores se rompen.',
+    lead2: 'No es un logger. Al sellar, CRONOS computa un <b>nivel de calidad</b> y la <b>diversidad observacional</b> de la traza, y si la base de evidencia no sostiene la confianza que el agente declara, la confianza almacenada se <b>recorta</b> — el agente no puede reclamar más certeza que la que su propia evidencia registrada le gana.',
+    howTitle: "Cómo se usa",
+    howSub: "— diez herramientas MCP, una disciplina",
+    fOpen: "una traza por decisión", fHyp: "TODAS las candidatas, no solo la ganadora",
+    fEv: "apoya / refuta", fDisc: "valen tanto como las conclusiones",
+    fSeal: "calidad + techo + hash", fVerify: "cualquier edición rompe la cadena",
+    cClaude: "Claude Code — uso diario", cCodex: "Codex — uso diario",
+    cOpencode: "opencode + DashScope", cQwenAgent: "QwenCronosAgent (este repo)",
+    qwenPath: "Los modelos Qwen no hablan MCP — este repo incluye un driver nativo que le da a qwen-max las mismas diez herramientas vía function calling de DashScope:",
+    repTitle: "Reportes reales, de uso diario real",
+    repSub: "— extractos textuales de trazas selladas",
+    repNote: 'Estos rastros de auditoría son <b>sesiones de trabajo reales</b>, no material de demo: agentes de Claude Code y Codex usando CRONOS por MCP, día tras día. La prosa del reporte la narra el agente <b>desde</b> la traza sellada — la capa de narración es agnóstica al modelo. Apuntá opencode a DashScope y <b>Qwen escribe el mismo reporte</b> desde la misma traza sellada; los hashes de abajo no se mueven.',
+    objective: "Objetivo", steps: "Traza paso a paso (extracto)",
+    hyps: "Hipótesis", decision: "Decisión", chain: "Cadena de custodia",
+    thLabel: "Etiqueta", thStatus: "Estado", thOutcome: "Resultado",
+    stActive: "ACTIVA", stDiscarded: "DESCARTADA", stConfirmed: "CONFIRMADA",
+    mTrace: "Traza", mAgent: "Agente", mQuality: "Calidad",
+    mConfidence: "Confianza", mDiversity: "Diversidad", mChain: "Cadena",
+    chainOkWord: "íntegra",
+    footer: 'La confianza se <b>gana con evidencia</b>, nunca se declara. La cadena recuerda lo que el agente preferiría olvidar.',
+  },
+  zh: {
+    sub: "AI 智能体的黑匣子 — 每个假设、每次排除，全部密封。",
+    narrates: "叙述引擎",
+    wolfLink: "狼的演示 →",
+    lead1: '无法展示推理过程的智能体，就是无法审计的智能体。<b>CRONOS</b> 将任何 AI 智能体的完整决策周期 — 记忆调用、工具调用、假设、证据、排除与最终决策 — 记录进一条只可追加的 <b>SHA-256 哈希链</b>。篡改、插入、重排或删除任何条目，其后的所有哈希都会断裂。',
+    lead2: '它不是日志工具。密封时，CRONOS 会计算追踪的<b>质量等级</b>与<b>观察多样性</b>；若证据基础不足以支撑智能体声称的置信度，存储的置信度会被<b>封顶</b> — 智能体不能索取超过其记录证据所赢得的确定性。',
+    howTitle: "如何使用",
+    howSub: "— 十个 MCP 工具，一种纪律",
+    fOpen: "每个决策一条追踪", fHyp: "所有候选假设，而非只有胜者",
+    fEv: "支持 / 反驳", fDisc: "与结论同等珍贵",
+    fSeal: "质量 + 封顶 + 哈希", fVerify: "任何修改都会断链",
+    cClaude: "Claude Code — 日常使用", cCodex: "Codex — 日常使用",
+    cOpencode: "opencode + DashScope", cQwenAgent: "QwenCronosAgent（本仓库）",
+    qwenPath: "Qwen 模型不支持 MCP — 本仓库提供原生驱动，通过 DashScope function calling 将同样十个工具交给 qwen-max：",
+    repTitle: "真实报告，来自真实的日常使用",
+    repSub: "— 密封追踪的逐字摘录",
+    repNote: '这些审计报告是<b>真实的工作会话</b>，不是演示样板：Claude Code 与 Codex 智能体通过 MCP 日复一日地使用 CRONOS。报告文字由智能体<b>依据</b>密封追踪叙述 — 叙述层与模型无关。将 opencode 指向 DashScope，<b>Qwen 就能从同一条密封追踪写出同样的报告</b>；底层哈希一位不动。',
+    objective: "目标", steps: "逐步追踪（摘录）",
+    hyps: "假设", decision: "决策", chain: "证据链",
+    thLabel: "标签", thStatus: "状态", thOutcome: "结果",
+    stActive: "活跃", stDiscarded: "已排除", stConfirmed: "已确认",
+    mTrace: "追踪", mAgent: "智能体", mQuality: "质量",
+    mConfidence: "置信度", mDiversity: "多样性", mChain: "链",
+    chainOkWord: "完整",
+    footer: '置信度<b>由证据赢得</b>，绝不凭空声称。链会记住智能体宁愿忘记的东西。',
+  },
+};
+
+/* ── Real reports — verbatim excerpts from sealed CRONOS traces ───────── */
+const REPORTS = [
+  {
+    id: "rebound",
+    chip: { en: "Code audit — REBOUND (Claude Code)", es: "Auditoría de código — REBOUND (Claude Code)", zh: "代码审计 — REBOUND（Claude Code）" },
+    meta: {
+      trace: "d1a0de7a-0516-49d6-84d1-f74324afacd3",
+      agent: "claude-code-auditor",
+      quality: "PARTIAL (2/3 observation groups)",
+      confidence: "17/20 stored — submitted 22/25, capped by diversity ceiling",
+      diversity: "2/3",
+      hash: "97533588e6d332701ba17a908f5f0d8676d036db392fba9804afae38023bb8d3",
+      ok: true,
+    },
+    objective: "Audit the /rebound project: read the source, identify at least one improvement, implement it using appropriate skills.",
+    steps: [
+      { k: "tool", t: "Read api_server.py + agent.py", w: "01:57:06", d: "agent.py: CRITICAL CODE DUPLICATION — MockQwenMemoryAgent._call_qwen (lines 402-473) is a near-identical copy of _mock_response_from_context (lines 476-537)." },
+      { k: "hyp", t: "hardcoded_user_action", w: "01:56:42", d: "Live.jsx always sends user_action=\"advance\" regardless of real user behavior, breaking the Bayesian personalization pipeline." },
+      { k: "hyp", t: "api_server_security_gap", w: "01:56:42", d: "api_server.py may have security or correctness issues not covered by the prior adversarial audit." },
+      { k: "hyp", t: "memory_agent_float_leak", w: "01:56:44", d: "If floats enter sealed/scored paths instead of staying in the cosmetic layer, that's a determinism defect per the CLAUDE.md invariants." },
+      { k: "ev", t: "refutes api_server_security_gap", w: "01:57:40", d: "Security hardening is comprehensive: token auth, user_id regex, CORS scoped, semaphore, LRU eviction, class_name whitelist, multiplier clamp. (negation detected in text)" },
+      { k: "disc", t: "memory_agent_float_leak", w: "01:57:48", d: "class_weights are floats by intentional design (Bayesian display priors, not sealed hashes). REBOUND has no determinism-seal invariant equivalent to Cronos/Corvus." },
+      { k: "seal", t: "Decision sealed", w: "01:59:36", d: "MockQwenMemoryAgent._call_qwen replaced with one-line delegation, eliminating ~60 lines of duplicated logic. Patch applied surgically with backup, AST verification, full test suite 90/90 pass." },
+    ],
+    hyps: [
+      { l: "hardcoded_user_action", s: "conf", o: "Confirmed by Live.jsx:115. Documented in README; requires mobile UX work, out of scope for this session." },
+      { l: "api_server_security_gap", s: "disc", o: "Refuted: security hardening is comprehensive. Reclassified finding as code duplication." },
+      { l: "memory_agent_float_leak", s: "disc", o: "Refuted: class_weights are display-layer floats by design, not sealed paths." },
+    ],
+    decision: "Fix applied: src/memory/agent.py — MockQwenMemoryAgent._call_qwen collapsed to single delegation call. Commit 4d3abb3. Tests: 90/90 pass. Patch method: surgical (anchored edit, .bak backup, AST parse verification, anchor-gone check).",
+    extra: "Cronos flagged two contradictions on its own: Type A — api_server_security_gap had evidence both supporting and refuting it (resolved by discard with documented reason). Type B — a hypothesis with supporting evidence was discarded; Cronos marks this as potentially premature, and the discard reason is on record.",
+  },
+  {
+    id: "checkout",
+    chip: { en: "Forensic audit — checkout service (Codex)", es: "Auditoría forense — servicio de checkout (Codex)", zh: "取证审计 — 结账服务（Codex）" },
+    meta: {
+      trace: "ed62e032-17a7-40d3-8c63-eb2c396b2283",
+      agent: "codex-root",
+      quality: "PARTIAL",
+      confidence: "37/50 stored",
+      diversity: "2/3",
+      hash: "5ee8e8bf91de4220fb4bc8e05d706bf15bb09b67419e685b93d7655de335e361",
+      ok: true,
+    },
+    objective: "Run a reproducible, read-only Forge audit and record the complete decision trail in Cronos. Detect real implementation risks, especially monetary arithmetic, security defaults, input boundaries, and integrity issues.",
+    steps: [
+      { k: "hyp", t: "coverage_scope_gap", w: "17:55:01", d: "Forge may include excluded virtual-environment or cache material in coverage accounting unless audited on a clean authored-source copy." },
+      { k: "tool", t: "forge.audit_repository", w: "17:55:08", d: "Status COMPLETE: 4 observed medium findings — hardcoded ADMIN_PASSWORD, discount_percent REAL, and two money-flow round()/division sites at app.py:166 and app.py:176." },
+      { k: "hyp", t: "webhook_auth_gap", w: "17:55:20", d: "Payment webhook may accept unauthenticated caller-controlled state transitions despite the boundary skill reporting no finding." },
+      { k: "ev", t: "supports webhook_auth_gap", w: "17:55:24", d: "Isolated execution transitioned a pending order to 'paid' through payment_webhook(status='succeeded', payment_id='untrusted'); the HTTP route has no authentication dependency." },
+      { k: "ev", t: "supports duplicate_sku_stock_gap", w: "17:55:23", d: "Isolated execution with stock 1 and two same-SKU cart lines raised uncaught sqlite3.IntegrityError on the second decrement." },
+      { k: "disc", t: "coverage_scope_gap", w: "17:55:26", d: "Exact clean-mirror inventory and 5 = 2 + 3 coverage reconciliation rule out denominator inflation." },
+      { k: "seal", t: "cronos_close_trace", w: "18:04:48", d: "Forge sealed four medium code-fact findings; independent execution confirmed unauthenticated payment status transitions and duplicate-SKU checkout failure. Stored confidence 37/50; chain integrity true." },
+    ],
+    hyps: [
+      { l: "coverage_scope_gap", s: "disc", o: "Refuted by clean-mirror inventory and coverage reconciliation." },
+      { l: "stale_forge_runtime", s: "disc", o: "No stale indicator; limited by unavailable fresh full-CLI fingerprint comparison." },
+      { l: "skill_contract_gap", s: "conf", o: "Only one executable skill; 20 documented skills were loaded only." },
+      { l: "webhook_auth_gap", s: "conf", o: "Source review and isolated execution show unauthenticated paid-state transition." },
+      { l: "duplicate_sku_stock_gap", s: "conf", o: "Isolated execution raised uncaught IntegrityError for duplicate SKU lines." },
+    ],
+    decision: "Audit completed against a clean five-file authored-source mirror. Forge sealed four medium code-fact findings (hardcoded default administrator credential and three monetary floating-point issues), and independent isolated execution confirmed two material detector gaps: unauthenticated payment status transitions and duplicate-SKU checkout causing uncaught sqlite3.IntegrityError.",
+    extra: "Two of five hypotheses were killed by their own evidence — and the kills are sealed in the chain with the reasons, exactly as recoverable as the confirmations.",
+  },
+  {
+    id: "stylometry",
+    chip: { en: "Governed red-team — stylometry (Codex)", es: "Red-team gobernado — stylometry (Codex)", zh: "受治理红队 — stylometry（Codex）" },
+    meta: {
+      trace: "a19e7d33-2090-4324-b95d-eb08bc8848c1",
+      agent: "codex-governed-audit",
+      quality: "PARTIAL",
+      confidence: "17/20 stored",
+      diversity: "2/3",
+      hash: "ee207fb50216e065c68915990a6ea873efcfa243ea2a028642ebea9c01f69ddf",
+      ok: true,
+    },
+    objective: "Audit /stylometry through FORGE MCP with CRONOS tracing, preserving repository state and producing a sealed report plus red-team review.",
+    steps: [
+      { k: "tool", t: "forge.audit_repository", w: "15:00:00", d: "Full induction-enabled audit completed: 31 in-scope Python modules, 18 CONNECTED_ALIVE, 21 findings, five AST-verified detector families." },
+      { k: "hyp", t: "red_team_scope_and_detector_limits", w: "15:00:00", d: "Sealed findings may be internally consistent while scope/detector boundaries permit false positives, false negatives, and unmodeled defects." },
+      { k: "ev", t: "supports red_team_scope_and_detector_limits", w: "15:00:00", d: "241 discovered / 31 analyzed / 210 skipped files, 13 modules outside CONNECTED_ALIVE scope, no runtime execution." },
+      { k: "ev", t: "supports red_team_scope_and_detector_limits", w: "15:00:00", d: "Repository revision 99e9756, branch main, no tracked modifications; FORGE snapshot SHA-256 353d9e89… recorded for reproducibility." },
+      { k: "seal", t: "cronos_close_trace", w: "15:01:37", d: "Stored confidence 17/20, quality PARTIAL, diversity 2/3, contradictions empty, chain OK." },
+    ],
+    hyps: [
+      { l: "red_team_scope_and_detector_limits", s: "ok", o: "Supported: scope/detector limitations recorded; no unverified confirmation." },
+    ],
+    decision: "FORGE audit complete and sealed; evidence-bounded within declared source and detector scope, with red-team limitations recorded.",
+    extra: "The agent's own uncertainty is a first-class recorded object: the red-team hypothesis exists to bound the claim, and the seal preserves that bound.",
+  },
+];
+
+let LANG = localStorage.getItem("ccx_lang") || "en";
+const T = () => I18N[LANG];
+const $ = (id) => document.getElementById(id);
+let currentReport = REPORTS[0].id;
+
+function applyLang() {
+  const t = T();
+  document.documentElement.lang = LANG === "zh" ? "zh-CN" : LANG;
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    el.textContent = t[el.dataset.i18n];
+  });
+  document.querySelectorAll("[data-i18n-html]").forEach((el) => {
+    el.innerHTML = t[el.dataset.i18nHtml];
+  });
+  $("footerLine").innerHTML = t.footer;
+  document.querySelectorAll("#langs button").forEach((b) => {
+    b.classList.toggle("on", b.dataset.lang === LANG);
+  });
+  buildChips();
+  showReport(currentReport);
+}
+
+function setLang(l) {
+  LANG = l;
+  localStorage.setItem("ccx_lang", l);
+  applyLang();
+}
+
+function buildChips() {
+  const box = $("repChips");
+  box.innerHTML = "";
+  REPORTS.forEach((r) => {
+    const b = document.createElement("button");
+    b.textContent = r.chip[LANG] || r.chip.en;
+    b.classList.toggle("on", r.id === currentReport);
+    b.onclick = () => { currentReport = r.id; buildChips(); showReport(r.id); };
+    box.appendChild(b);
+  });
+}
+
+const ST_CLASS = { ok: "ok", disc: "disc", conf: "conf" };
+function stLabel(s) {
+  const t = T();
+  return s === "disc" ? t.stDiscarded : s === "conf" ? t.stConfirmed : t.stActive;
+}
+
+function showReport(id) {
+  const t = T();
+  const r = REPORTS.find((x) => x.id === id);
+  if (!r) return;
+
+  const meta = `
+    <div class="rmeta">
+      <div class="rm"><b>${t.mTrace}</b><span class="mono">${r.meta.trace.slice(0, 18)}…</span></div>
+      <div class="rm"><b>${t.mAgent}</b><span class="mono">${r.meta.agent}</span></div>
+      <div class="rm"><b>${t.mQuality}</b><span>${r.meta.quality}</span></div>
+      <div class="rm hl"><b>${t.mConfidence}</b><span>${r.meta.confidence}</span></div>
+      <div class="rm"><b>${t.mDiversity}</b><span>${r.meta.diversity}</span></div>
+      <div class="rm"><b>${t.mChain}</b><span class="mono">${r.meta.hash.slice(0, 18)}… <span class="okword" style="color:var(--ok)">${r.meta.ok ? t.chainOkWord : "BROKEN"}</span></span></div>
+    </div>`;
+
+  const steps = r.steps.map((s) => `
+    <div class="tl ${s.k === "hyp" ? "hyp" : s.k === "disc" ? "disc" : s.k === "seal" ? "seal" : ""}">
+      <b>${s.t}</b><span class="when">${s.w} UTC</span><br>${s.d}
+    </div>`).join("");
+
+  const hyps = r.hyps.map((h) => `
+    <tr><td>${h.l}</td>
+    <td><span class="st ${ST_CLASS[h.s]}">${stLabel(h.s)}</span></td>
+    <td>${h.o}</td></tr>`).join("");
+
+  $("report").innerHTML = `
+    ${meta}
+    <div class="rsec"><h3>${t.objective}</h3><p>${r.objective}</p></div>
+    <div class="rsec"><h3>${t.steps}</h3><div class="timeline">${steps}</div></div>
+    <div class="rsec"><h3>${t.hyps}</h3>
+      <table class="hyps"><thead><tr>
+        <th>${t.thLabel}</th><th>${t.thStatus}</th><th>${t.thOutcome}</th>
+      </tr></thead><tbody>${hyps}</tbody></table></div>
+    <div class="rsec"><h3>${t.decision}</h3><div class="decision">${r.decision}</div>
+      <p style="margin-top:10px;color:var(--muted);font-size:.92em">${r.extra}</p></div>
+    <div class="chainline">entry_hash : ${r.meta.hash}<br>chain_ok&nbsp;&nbsp; : <span class="okword">${r.meta.ok}</span></div>
+  `;
+}
+
+document.querySelectorAll("#langs button").forEach((b) => {
+  b.onclick = () => setLang(b.dataset.lang);
+});
+
+applyLang();
+</script>
+</body>
+</html>

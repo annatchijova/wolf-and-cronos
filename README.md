@@ -313,12 +313,12 @@ this repo, with no external services:
   "mcpServers": {
     "cronos": {
       "command": "python3",
-      "args": ["/path/to/corvus-cronos-bridge/cronos/mcp_server.py"],
+      "args": ["/path/to/wolf-and-cronos/cronos/mcp_server.py"],
       "env": { "CRONOS_DB_PATH": "/path/to/cronos.db" }
     },
     "corvus": {
       "command": "python3",
-      "args": ["/path/to/corvus-cronos-bridge/corvus/mcp_server.py"],
+      "args": ["/path/to/wolf-and-cronos/corvus/mcp_server.py"],
       "env": { "CORVUS_DB_PATH": "/path/to/corvus_memory.db" }
     }
   }
@@ -427,7 +427,7 @@ written to a dated report (`results/redteam_<date>.{json,md}`) and sealed
 as a CRONOS trace of its own.
 
 ```
-15 3 * * *  cd /opt/corvus-cronos-bridge && \
+15 3 * * *  cd /opt/wolf-and-cronos && \
     DASHSCOPE_API_KEY=... python3 scripts/redteam_nightly.py --out results/
 ```
 

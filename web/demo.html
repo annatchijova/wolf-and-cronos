@@ -72,6 +72,8 @@
       var(--grad) border-box;
   }
   .pill.qwen b { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  a.pill { text-decoration: none; }
+  a.pill:hover { border-color: var(--line-strong); color: var(--ink); }
 
   .langs { display: flex; gap: 4px; border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
   .langs button {
@@ -292,12 +294,13 @@
         <button data-lang="zh">中文</button>
       </div>
       <span class="pill qwen"><span data-i18n="narratedBy"></span> <b>Qwen</b> · DashScope</span>
+      <a class="pill" href="cronos.html" data-i18n="cronosLink"></a>
     </div>
   </header>
 
   <div class="banner">
     <span data-i18n="banner"></span>
-    <a href="https://github.com/annatchijova/corvus-cronos-bridge" target="_blank" rel="noopener" data-i18n="runLive"></a>
+    <a href="https://github.com/annatchijova/wolf-and-cronos" target="_blank" rel="noopener" data-i18n="runLive"></a>
   </div>
 
   <div class="grid">
@@ -363,6 +366,7 @@ const I18N = {
     narratedBy: "narrated by",
     banner: "Static demo — every verdict, hash, and trace below was precomputed by the real engine. Nothing is invented.",
     runLive: "Run it live: clone the repo",
+    cronosLink: "CRONOS →",
     msgTitle: "The message under analysis",
     msgSub: "— pick a sample below",
     wolfHead: "The Wolf — a five-message escalation, one tactic at a time",
@@ -391,6 +395,7 @@ const I18N = {
     narratedBy: "narrado por",
     banner: "Demo estática — cada veredicto, hash y traza de abajo fue precomputado por el motor real. Nada está inventado.",
     runLive: "Corrélo en vivo: cloná el repo",
+    cronosLink: "CRONOS →",
     msgTitle: "El mensaje bajo análisis",
     msgSub: "— elegí una muestra abajo",
     wolfHead: "El Lobo — una escalada de cinco mensajes, una táctica por vez",
@@ -419,6 +424,7 @@ const I18N = {
     narratedBy: "叙述引擎",
     banner: "静态演示 — 以下每个裁决、哈希与追踪均由真实引擎预先计算，绝无虚构。",
     runLive: "在本地运行：克隆仓库",
+    cronosLink: "CRONOS →",
     msgTitle: "待分析的消息",
     msgSub: "— 在下方选择一个样本",
     wolfHead: "狼的剧本 — 五条消息的升级攻击，每条一个话术",

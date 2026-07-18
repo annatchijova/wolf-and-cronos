@@ -1,4 +1,4 @@
-# corvus-cronos-bridge — CORVUS + CRONOS product
+# wolf-and-cronos — CORVUS + CRONOS product
 # Qwen Cloud Hackathon 2026, Track 3
 # Apache 2.0 — Anna Tchijova, VIGIA AI Collective
 
