@@ -1,6 +1,6 @@
 # CORVUS + CRONOS
 
-> **A deterministic multi-agent reasoning platform that detects manipulation in natural language while producing cryptographically verifiable reasoning traces.**
+> **A deterministic multi-agent platform for detecting social engineering and manipulation in natural-language conversations, with cryptographically verifiable reasoning traces.**
 
 **Qwen Cloud Hackathon 2026 · Track 3: Agentic AI**
 
@@ -14,7 +14,11 @@ CORVUS analyzes conversations through six independent theoretical frameworks (Gr
 
 CRONOS records the entire reasoning process — hypotheses, evidence, discarded alternatives, and the final decision — into a **SHA-256 tamper-evident trace chain**. Any attempt to modify the reasoning after the fact becomes computationally detectable.
 
-**Qwen is used exclusively as a narrative layer. It explains already-sealed evidence to humans, but is mathematically incapable of altering the verdict — Qwen narrates; it never judges.**
+> **Core invariant**
+>
+> **Qwen narrates. It never judges.**
+>
+> Every verdict is computed deterministically *before* any LLM is invoked. Qwen explains already-sealed evidence to humans, but is mathematically incapable of altering the verdict.
 
 The result is a system that does not merely classify text as suspicious: it explains *why*, records *how* that conclusion was reached, and lets any third party verify that the reasoning was never altered.
 
@@ -22,7 +26,41 @@ The repository is fully self-contained — everything below ships in this repo: 
 
 ---
 
-## Architecture at a glance
+## At a glance
+
+CORVUS + CRONOS combines four ideas:
+
+- **Deterministic multi-agent analysis** — six independent theoretical frameworks read every message in parallel.
+- **Corroboration between independent theories** — no single framework can raise an alarm alone.
+- **Cryptographically sealed reasoning traces** — every hypothesis, discard, and decision hashed into a SHA-256 chain.
+- **LLM narration outside the decision path** — Qwen explains; it never decides.
+
+Instead of asking an LLM to decide whether a message is manipulative, the platform separates **reasoning** from **explanation**:
+
+1. **CORVUS analyzes.**
+2. **The corroboration gate decides.**
+3. **CRONOS seals the reasoning.**
+4. **Qwen explains the already-sealed result.**
+
+| Component | Responsibility |
+|---|---|
+| **CORVUS** | Multi-agent manipulation detection |
+| **Corroboration Gate** | Requires independent agreement before escalating |
+| **CRONOS** | Tamper-evident reasoning recorder |
+| **Qwen** | Human-readable narration only |
+
+## Why this is different
+
+- **No black-box score** — a sealed verdict with a recorded, inspectable reason.
+- **No single detector decides** — corroboration across independent frameworks.
+- **Every hypothesis is recorded** — including the ones considered and rejected.
+- **Every discarded explanation is preserved** — not just the winner.
+- **Every reasoning trace is cryptographically sealed** — SHA-256, tamper-evident.
+- **The LLM is completely outside the decision path** — *Qwen narrates; it never judges.*
+
+---
+
+## Architecture
 
 **[▶ Interactive architecture diagram](https://annatchijova.github.io/vigia/diagrama.html)** — one pipeline, one codebase: detection → gate → seal → narration.
 
@@ -100,24 +138,6 @@ The two engines, on their own:
 The full engine runs entirely locally today (95 + 165 + 118 tests, zero cloud dependency); `api_server.py`, the `Dockerfile`, and the nightly red-team job are the deployable product. What remains is standing it up on ECS the same way `rebound` and `raven-memory` already are, and running the first live pass against DashScope.
 
 ---
-
-## Key ideas
-
-| Component | Responsibility |
-|---|---|
-| **CORVUS** | Multi-agent manipulation detection |
-| **Corroboration Gate** | Requires independent agreement before escalating |
-| **CRONOS** | Tamper-evident reasoning recorder |
-| **Qwen** | Human-readable narration only |
-
-## Why this is different
-
-- **No black-box score** — a sealed verdict with a recorded, inspectable reason.
-- **No single detector decides** — corroboration across independent frameworks.
-- **Every hypothesis is recorded** — including the ones considered and rejected.
-- **Every discarded explanation is preserved** — not just the winner.
-- **Every reasoning trace is cryptographically sealed** — SHA-256, tamper-evident.
-- **The LLM is completely outside the decision path** — *Qwen narrates; it never judges.*
 
 ## Features
 
