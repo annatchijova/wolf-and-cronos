@@ -1,4 +1,6 @@
-# CORVUS + CRONOS — The Wolf Doesn't Get to Whisper Unchallenged
+# CORVUS + CRONOS
+
+> **A deterministic multi-agent reasoning platform that detects manipulation in natural language while producing cryptographically verifiable reasoning traces.**
 
 **Qwen Cloud Hackathon 2026 · Track 3: Agentic AI**
 
@@ -6,73 +8,21 @@
 
 ---
 
-## Act 1 — The Wolf
+## What it is
 
-> *"Hi Anna! Great meeting you at the audit-tech conference last week. Your talk on tamper-evident logs was excellent."*
+CORVUS analyzes conversations through six independent theoretical frameworks (Grice, Carnegie/Cialdini, Aristotle, Berne, Linguistics, and Peircean abductive synthesis). Instead of letting a single detector trigger an alarm, all findings pass through a **corroboration gate** that requires independent agreement before a verdict can escalate.
 
-Five messages. That's all it takes. Message 1 is pure rapport — nothing to flag, nothing a filter would ever catch. By message 5, the same voice is telling Anna she has two hours to wire a deposit or lose everything, dressed in urgency, guilt, and fear. That's the anatomy of every scam that has ever worked: it never opens with the ask. It opens with trust.
+CRONOS records the entire reasoning process — hypotheses, evidence, discarded alternatives, and the final decision — into a **SHA-256 tamper-evident trace chain**. Any attempt to modify the reasoning after the fact becomes computationally detectable.
 
-In our demo, `qwen-max` plays the Wolf — a fictional social engineer, red-teaming live, escalating one manipulation layer per message: rapport, flattery, false scarcity + insider secrecy, authority + social proof, urgency + guilt + fear.
+**Qwen is used exclusively as a narrative layer. It explains already-sealed evidence to humans, but is mathematically incapable of altering the verdict — Qwen narrates; it never judges.**
 
-## Act 2 — The Watchdogs
+The result is a system that does not merely classify text as suspicious: it explains *why*, records *how* that conclusion was reached, and lets any third party verify that the reasoning was never altered.
 
-A single model reading that conversation might flag message 5 as "suspicious" and stop there — a hunch with no evidence behind it. CORVUS never gets that luxury. Every message is read in parallel by six independent perspectives that don't know or trust each other:
-
-| Watchdog | What it's listening for |
-|---|---|
-| **L1 · Grice** | Violations of conversational cooperation — saying more, or less, than the moment calls for |
-| **L2 · Carnegie** | Cialdini's influence levers — reciprocity, scarcity, authority, social proof |
-| **L3 · Aristotle** | Ethos / Pathos / Logos out of balance — emotion crowding out reason |
-| **L4 · Berne** | Transactional ego states — is this Adult speaking to Adult, or Parent cornering Child? |
-| **L5 · Linguistics** | Register shifts, complexity spikes, Zipf anomalies — the fingerprints of a scripted pitch |
-| **L6 · Peirce** | Abductive synthesis — once the other five report in, what's the simplest explanation that fits everything they saw? |
-
-And here's the rule that makes this different from a paranoid filter: **no single watchdog can raise the alarm alone.** One flag is noise. It takes a corroboration gate — at least two independent frameworks agreeing — before the verdict escalates past silence. By message 5 of the Wolf's script, the gate isn't just triggered, it's unanimous.
-
-## Act 3 — The Narrator, Not the Judge
-
-Once the verdict is sealed, `qwen-plus` is invited in — but only to *narrate*, never to *decide*. It reads the already-sealed evidence and writes the human-readable case, complete with an auto-generated devil's-advocate counter-hypothesis, so the system argues against itself before a verdict is allowed to stand. Swap `qwen-plus` for any other model and the courtroom narration changes tone. The verdict underneath does not move a single bit.
-
-## Act 4 — The Cover-Up
-
-What happens when the wolf has friends on the inside? In the live demo, a second terminal reaches directly into the database and edits the sealed verdict — the way a corrupt insider would. CRONOS's SHA-256 chain notices instantly: *"You can delete the truth. You cannot hide that you deleted it."* Every trace is a link in a chain; break one link, and every link after it screams.
-
-## Act 5 — The Gauntlet
-
-Then we hand the mic to the room. Type anything. Try to sound benign while manipulating, or manipulative while being harmless. The same six watchdogs and the same corroboration gate score it live, with nowhere to hide a thumb on the scale.
-
-`python3 scripts/showcase.py` runs the whole performance end to end, rehearsal-safe by default — add `--live-wolf` to let `qwen-max` write the attack live instead of reciting the script.
+The repository is fully self-contained — everything below ships in this repo: **`cronos/`** (the audit engine, 165 tests), **`corvus/`** (the detection engine, 95 tests), and **`corvus_cronos/`** (the integration bridge and product layer, 118 tests).
 
 ---
 
-## What this actually is
-
-Underneath the theater: a **multi-agent system** that detects manipulation and social engineering in text through six independent theoretical frameworks, arbitrated by a corroboration gate — no single agent can trigger an alarm alone — and permanently auditable via **CRONOS**, a SHA-256 tamper-evident trace chain that is the spine of this product.
-
-The repository is fully self-contained — everything below ships in this repo:
-
-- **`cronos/`** (165 tests) — the forensic audit engine: hash-chained hypothesis traces, quality/diversity scoring, contradiction detection, and an MCP server so any agent can write and verify traces.
-- **`corvus/`** (95 tests) — the multi-agent analysis engine, reduced to exactly what the product needs: the L1-L6 detectors, verdict engine, behavioral memory, and its MCP server. No messaging-platform integrations, no standalone-app baggage.
-- **`corvus_cronos/`** (118 tests) — the integration bridge and product layer: wraps CORVUS output into CRONOS traces, runs Qwen as a CRONOS-disciplined agent, serves the hosted API, and calls Qwen to narrate — never to judge — the negotiation for human review.
-
-CRONOS is the product's center of gravity: every agent vote, every gate decision, every discarded hypothesis becomes a sealed, verifiable trace. CORVUS supplies the detection signals that make those traces worth sealing.
-
----
-
-## Not one trick — a platform with several jobs
-
-The Wolf is the demo. It is not the only thing this does. Three reusable pieces, each useful on its own:
-
-- **Catch manipulation in text.** CORVUS's six frameworks plus the corroboration gate flag social engineering, phishing, and coercion — with a *sealed, auditable reason*, not a black-box score. Shipped as the hosted [`/analyze` API](#hosted-api-api_serverpy--the-alibaba-cloud-product) for Alibaba Cloud.
-- **Give any AI agent a black box.** CRONOS records the full reasoning of *any* agent — recalls, hypotheses, evidence, discards, decision — into a tamper-evident chain, over MCP. It runs in **Claude Code and Codex daily**: code audits, forensic reviews, and — in one real sealed trace — stopping a rigid "no-floats" rule from rewriting working code it was never meant to touch. The real reports are on the [CRONOS page](https://annatchijova.github.io/vigia/cronos.html).
-- **Bring that discipline to Qwen.** [`QwenCronosAgent`](#qwen-native-agent-driver-corvus_cronosqwen_agentpy) hands `qwen-max` the same ten CRONOS tools through DashScope function calling, so a DashScope model can run a hypothesis-tested, *sealed* reasoning loop for any task — not just narrate one.
-- **Prove nothing was tampered with.** Every verdict, vote, and discard is SHA-256-chained. A corrupt insider editing the database directly is caught the next time the chain is verified — *"you can delete the truth, you cannot hide that you deleted it."*
-
-CORVUS is one detector plugged into it. CRONOS is the platform, and any reasoning task — not just forensics — is a valid use for it.
-
----
-
-## Architecture
+## Architecture at a glance
 
 **[▶ Interactive architecture diagram](https://annatchijova.github.io/vigia/diagrama.html)** — one pipeline, one codebase: detection → gate → seal → narration.
 
@@ -80,7 +30,8 @@ CORVUS is one detector plugged into it. CRONOS is the platform, and any reasonin
 
 ![CORVUS × CRONOS architecture — verdict engine and CRONOS trace chain seal the verdict, then the read-only Qwen narrator explains it](visual/diagrama2.png)
 
-The same flow as text, for readers of the raw file:
+<details>
+<summary>The same flow as text (for readers of the raw file)</summary>
 
 ```
 TEXT ARTIFACT
@@ -120,6 +71,15 @@ TEXT ARTIFACT
              (read-only — cannot
               alter the verdict)
 ```
+</details>
+
+### Component diagrams
+
+The two engines, on their own:
+
+![CORVUS analysis architecture — the six theoretical frameworks feeding the verdict engine](visual/architecture_diagram_corvus.svg)
+
+![CRONOS architecture — hash-chained hypothesis traces, quality/diversity scoring, and the tamper-evident SHA-256 chain](visual/cronos_architecture.svg)
 
 ### Deployment topology (Alibaba Cloud ECS — deploy pending)
 
@@ -137,35 +97,103 @@ TEXT ARTIFACT
                                        DashScope API (qwen-plus / qwen-max)
 ```
 
-The full engine runs entirely locally today (95 + 165 + 118 tests, zero
-cloud dependency); `api_server.py`, the `Dockerfile`, and the nightly
-red-team job below are the deployable product. What remains is standing it
-up on ECS the same way `rebound` and `raven-memory` already are, and
-running the first live pass against DashScope.
+The full engine runs entirely locally today (95 + 165 + 118 tests, zero cloud dependency); `api_server.py`, the `Dockerfile`, and the nightly red-team job are the deployable product. What remains is standing it up on ECS the same way `rebound` and `raven-memory` already are, and running the first live pass against DashScope.
 
-### Component diagrams
+---
 
-The two engines, on their own:
+## Key ideas
 
-![CORVUS analysis architecture — the six theoretical frameworks feeding the verdict engine](visual/architecture_diagram_corvus.svg)
+| Component | Responsibility |
+|---|---|
+| **CORVUS** | Multi-agent manipulation detection |
+| **Corroboration Gate** | Requires independent agreement before escalating |
+| **CRONOS** | Tamper-evident reasoning recorder |
+| **Qwen** | Human-readable narration only |
 
-![CRONOS architecture — hash-chained hypothesis traces, quality/diversity scoring, and the tamper-evident SHA-256 chain](visual/cronos_architecture.svg)
+## Why this is different
 
-### Why six agents instead of one?
+- **No black-box score** — a sealed verdict with a recorded, inspectable reason.
+- **No single detector decides** — corroboration across independent frameworks.
+- **Every hypothesis is recorded** — including the ones considered and rejected.
+- **Every discarded explanation is preserved** — not just the winner.
+- **Every reasoning trace is cryptographically sealed** — SHA-256, tamper-evident.
+- **The LLM is completely outside the decision path** — *Qwen narrates; it never judges.*
 
-A single arbiter (gate threshold = 1: any agent fires) turns every lone
-false positive into an alarm. Consensus mode (gate threshold = 2) requires
-two independent theoretical frameworks to corroborate before any verdict
-rises above SILENT — a structural defense against alert fatigue, not a
-tuning knob. Measured FPR/FNR figures will be published once the live
-Qwen/Alibaba deployment pass is done (`benchmark/benchmark.py` reproduces
-them on the built-in corpus).
+## Features
 
-The corroboration gate is not a filter added on top of agents — it IS the negotiation mechanism. Agents that fire below the threshold have their "gate_fires" hypothesis discarded by CRONOS, creating an auditable record of the overrule.
+- Multi-agent manipulation detection (six theoretical frameworks)
+- Multi-framework corroboration gate
+- Deterministic verdict engine
+- Exact `Fraction` arithmetic — no floating point in the sealed path
+- SHA-256 tamper-evident reasoning chain
+- Qwen narration outside the decision path
+- CRONOS + CORVUS MCP servers (used daily in Claude Code and Codex)
+- Qwen-native agent driver (DashScope function calling)
+- Hosted FastAPI service — `/analyze`, `/chat`, `/verify`, Alibaba-Cloud-ready
+- Offline deterministic mode (no API key required)
+- Behavioral baseline adaptation (per-user, Welford online algorithm)
+- Nightly adversarial evaluation (live-generated FPR/FNR)
 
-### How agents resolve disagreements
+---
 
-Each agent operates independently and emits a vote (SILENT / active). The gate:
+## The Wolf demo
+
+*"The Wolf doesn't get to whisper unchallenged."* Now that the pieces are clear, here is the story they were built for.
+
+### Act 1 — The Wolf
+
+> *"Hi Anna! Great meeting you at the audit-tech conference last week. Your talk on tamper-evident logs was excellent."*
+
+Five messages. That's all it takes. Message 1 is pure rapport — nothing to flag, nothing a filter would ever catch. By message 5, the same voice is telling Anna she has two hours to wire a deposit or lose everything, dressed in urgency, guilt, and fear. That's the anatomy of every scam that has ever worked: it never opens with the ask. It opens with trust.
+
+In our demo, `qwen-max` plays the Wolf — a fictional social engineer, red-teaming live, escalating one manipulation layer per message: rapport, flattery, false scarcity + insider secrecy, authority + social proof, urgency + guilt + fear.
+
+### Act 2 — The Watchdogs
+
+A single model reading that conversation might flag message 5 as "suspicious" and stop there — a hunch with no evidence behind it. CORVUS never gets that luxury. Every message is read in parallel by six independent perspectives that don't know or trust each other:
+
+| Watchdog | What it's listening for |
+|---|---|
+| **L1 · Grice** | Violations of conversational cooperation — saying more, or less, than the moment calls for |
+| **L2 · Carnegie** | Cialdini's influence levers — reciprocity, scarcity, authority, social proof |
+| **L3 · Aristotle** | Ethos / Pathos / Logos out of balance — emotion crowding out reason |
+| **L4 · Berne** | Transactional ego states — is this Adult speaking to Adult, or Parent cornering Child? |
+| **L5 · Linguistics** | Register shifts, complexity spikes, Zipf anomalies — the fingerprints of a scripted pitch |
+| **L6 · Peirce** | Abductive synthesis — once the other five report in, what's the simplest explanation that fits everything they saw? |
+
+And here's the rule that makes this different from a paranoid filter: **no single watchdog can raise the alarm alone.** One flag is noise. It takes a corroboration gate — at least two independent frameworks agreeing — before the verdict escalates past silence. By message 5 of the Wolf's script, the gate isn't just triggered, it's unanimous.
+
+### Act 3 — The Narrator, Not the Judge
+
+Once the verdict is sealed, `qwen-plus` is invited in — but only to *narrate*, never to *decide*. It reads the already-sealed evidence and writes the human-readable case, complete with an auto-generated devil's-advocate counter-hypothesis, so the system argues against itself before a verdict is allowed to stand. Swap `qwen-plus` for any other model and the courtroom narration changes tone. The verdict underneath does not move a single bit.
+
+### Act 4 — The Cover-Up
+
+What happens when the wolf has friends on the inside? In the live demo, a second terminal reaches directly into the database and edits the sealed verdict — the way a corrupt insider would. CRONOS's SHA-256 chain notices instantly: *"You can delete the truth. You cannot hide that you deleted it."* Every trace is a link in a chain; break one link, and every link after it screams.
+
+### Act 5 — The Gauntlet
+
+Then we hand the mic to the room. Type anything. Try to sound benign while manipulating, or manipulative while being harmless. The same six watchdogs and the same corroboration gate score it live, with nowhere to hide a thumb on the scale.
+
+`python3 scripts/showcase.py` runs the whole performance end to end, rehearsal-safe by default — add `--live-wolf` to let `qwen-max` write the attack live instead of reciting the script.
+
+### Beyond the demo
+
+The Wolf is one detector plugged into the platform. CRONOS records the reasoning of *any* agent, not just CORVUS:
+
+- **Any agent's black box, over MCP.** CRONOS runs in **Claude Code and Codex daily**: code audits, forensic reviews, and — in one real sealed trace — stopping a rigid "no-floats" rule from rewriting working code it was never meant to touch. The real reports are on the [CRONOS page](https://annatchijova.github.io/vigia/cronos.html).
+- **The same discipline for Qwen.** [`QwenCronosAgent`](#qwen-native-agent-driver-corvus_cronosqwen_agentpy) gives a DashScope model the same ten CRONOS tools to run a sealed, hypothesis-tested reasoning loop — for any task, not just narration.
+- **A deployable scam-check API.** The [`/analyze` + `/chat` service](#hosted-api-api_serverpy--the-alibaba-cloud-product) for Alibaba Cloud.
+
+Any reasoning task — not just forensics — is a valid use for it.
+
+---
+
+## How six agents reach one verdict
+
+A single arbiter (gate threshold = 1: any agent fires) turns every lone false positive into an alarm. Consensus mode (gate threshold = 2) requires two independent theoretical frameworks to corroborate before any verdict rises above SILENT — a structural defense against alert fatigue, not a tuning knob. Measured FPR/FNR figures will be published once the live Qwen/Alibaba deployment pass is done (`benchmark/benchmark.py` reproduces them on the built-in corpus).
+
+The corroboration gate is not a filter added on top of agents — it IS the negotiation mechanism. Each agent operates independently and emits a vote (SILENT / active). The gate:
 
 1. Counts active votes (L1-L5 only; L6 is synthesis).
 2. If `count >= 2`: consensus reached — emits the VerdictEngine result.
@@ -173,12 +201,9 @@ Each agent operates independently and emits a vote (SILENT / active). The gate:
 
 CRONOS records every step: which agents voted, what evidence they cited, which hypotheses were discarded by the gate. The SHA-256 chain makes this trace tamper-evident — any post-hoc modification breaks the hash.
 
----
-
 ## The scoring math (exact, from `corvus/verdict/engine.py`)
 
-Every layer has a fixed weight in `Fraction` arithmetic — no float ever enters
-a sealed score:
+Every layer has a fixed weight in `Fraction` arithmetic — no float ever enters a sealed score:
 
 | Layer | Weight |
 |---|---:|
@@ -189,76 +214,31 @@ a sealed score:
 | L1 · Grice | 0.15 |
 | L5 · Linguistics | 0.10 |
 
-Weights sum to 1.15, deliberately over 1.0: not every layer fires on a given
-message, so the excess gives each firing layer proportional influence without
-requiring the weights to renormalize. The pipeline, in order:
+Weights sum to 1.15, deliberately over 1.0: not every layer fires on a given message, so the excess gives each firing layer proportional influence without requiring the weights to renormalize. The pipeline, in order:
 
-1. **Corroboration gate.** Fewer than `CORROBORATION_THRESHOLD` (2) active
-   L1-L5 signals → the message is forced to `SILENT` before any weighting
-   happens. No amount of behavioral-baseline deviation can override this —
-   it is the first check, unconditionally.
-2. **Weighted sum.** `raw_score = Σ(layer.severity × layer.weight)` over
-   whichever layers fired.
-3. **Baseline delta multiplier.** If the user's current message deviates
-   *above* their own historical average (Welford online algorithm over past
-   messages), `score = raw_score × (1 + baseline_delta × 0.5)` — a message
-   that is unremarkable in isolation can still escalate if it is unusual
-   *for this specific user*.
-4. **Cap at 1**, then map to `SILENT / WATCH / ALERT / CRITICAL` via
-   configured thresholds.
-5. **Seal.** `audit_hash = SHA256(score_str | level | result.audit_hash)` —
-   the verdict's own hash chains into the per-message evidence hash.
+1. **Corroboration gate.** Fewer than `CORROBORATION_THRESHOLD` (2) active L1-L5 signals → the message is forced to `SILENT` before any weighting happens. No amount of behavioral-baseline deviation can override this — it is the first check, unconditionally.
+2. **Weighted sum.** `raw_score = Σ(layer.severity × layer.weight)` over whichever layers fired.
+3. **Baseline delta multiplier.** If the user's current message deviates *above* their own historical average (Welford online algorithm over past messages), `score = raw_score × (1 + baseline_delta × 0.5)` — a message that is unremarkable in isolation can still escalate if it is unusual *for this specific user*.
+4. **Cap at 1**, then map to `SILENT / WATCH / ALERT / CRITICAL` via configured thresholds.
+5. **Seal.** `audit_hash = SHA256(score_str | level | result.audit_hash)` — the verdict's own hash chains into the per-message evidence hash.
 
 ## The drip-feed defense (`bridge.py`, RT-10)
 
-A red-team pass against the bridge asked a specific question: what happens to
-an attacker who spreads one manipulation tactic per message instead of
-stacking them in one, so no single message ever reaches the 2-signal
-corroboration threshold? Tested by induction: a 10-message escalating
-conversation run through the bridge stayed `SILENT` on every message — the
-gate's own logic (deliberately kept intact in the vendored engine) has no
-mechanism to look across messages.
+A red-team pass against the bridge asked a specific question: what happens to an attacker who spreads one manipulation tactic per message instead of stacking them in one, so no single message ever reaches the 2-signal corroboration threshold? Tested by induction: a 10-message escalating conversation run through the bridge stayed `SILENT` on every message — the gate's own logic (deliberately kept intact in the vendored engine) has no mechanism to look across messages.
 
-The fix lives in the bridge, not in CORVUS: a bounded 6-message rolling window
-(`DRIP_WINDOW_SIZE`) per `user_id` accumulates which frameworks fired on each
-near-miss message. If the *union* of frameworks across that window reaches the
-corroboration threshold — even though no single message did alone — the bridge
-escalates to `WATCH` and opens its own CRONOS trace (`ACCUMULATION`) recording
-exactly which messages and frameworks contributed, then clears the window so
-one crossing can't retrigger indefinitely. Same corroboration philosophy (no
-single framework decides alone), widened from one message to a short recent
-history.
+The fix lives in the bridge, not in CORVUS: a bounded 6-message rolling window (`DRIP_WINDOW_SIZE`) per `user_id` accumulates which frameworks fired on each near-miss message. If the *union* of frameworks across that window reaches the corroboration threshold — even though no single message did alone — the bridge escalates to `WATCH` and opens its own CRONOS trace (`ACCUMULATION`) recording exactly which messages and frameworks contributed, then clears the window so one crossing can't retrigger indefinitely. Same corroboration philosophy (no single framework decides alone), widened from one message to a short recent history.
 
 ## Bridge internals worth knowing
 
-- **Read-only adapter.** `bridge.py` imports CORVUS's L1-L6 detectors and
-  `VerdictEngine` and CRONOS's `TraceStore`/`CronosTracer` directly — it does
-  not fork or modify either package's source.
-- **Parallel detection, serialized writes.** L1-L5 run concurrently in a
-  5-worker `ThreadPoolExecutor` (pure computation, no shared state). CRONOS
-  trace writes and the CORVUS `MemoryEngine` baseline read/write are wrapped
-  in a single `threading.Lock` — both stores are not safe for concurrent
-  writers, so phases 7-9 (trace, chain-verify, persist) serialize while the
-  detector phase stays parallel.
-- **Crash isolation (RT-01).** A detector that raises an exception is caught,
-  logged, and tracked in `crashed_agents` — distinct from a genuine `SILENT`
-  result, so a bug in one detector can't be mistaken for "found nothing."
-- **Fixed iteration order.** Agent lists are built from the fixed L1→L6
-  dict order, never from thread-completion order — otherwise the same input
-  could produce differently-ordered evidence strings (and therefore different
-  hashes) across runs.
-- **Devil's-advocate synthesis is structural, not generated by Qwen.** The
-  counter-hypothesis text in `_build_devils_advocate()` is built directly from
-  which layers fired/stayed silent — Qwen narrates it in prose, but the
-  argument itself comes from deterministic Python, not the model.
-
----
+- **Read-only adapter.** `bridge.py` imports CORVUS's L1-L6 detectors and `VerdictEngine` and CRONOS's `TraceStore`/`CronosTracer` directly — it does not fork or modify either package's source.
+- **Parallel detection, serialized writes.** L1-L5 run concurrently in a 5-worker `ThreadPoolExecutor` (pure computation, no shared state). CRONOS trace writes and the CORVUS `MemoryEngine` baseline read/write are wrapped in a single `threading.Lock` — both stores are not safe for concurrent writers, so phases 7-9 (trace, chain-verify, persist) serialize while the detector phase stays parallel.
+- **Crash isolation (RT-01).** A detector that raises an exception is caught, logged, and tracked in `crashed_agents` — distinct from a genuine `SILENT` result, so a bug in one detector can't be mistaken for "found nothing."
+- **Fixed iteration order.** Agent lists are built from the fixed L1→L6 dict order, never from thread-completion order — otherwise the same input could produce differently-ordered evidence strings (and therefore different hashes) across runs.
+- **Devil's-advocate synthesis is structural, not generated by Qwen.** The counter-hypothesis text in `_build_devils_advocate()` is built directly from which layers fired/stayed silent — Qwen narrates it in prose, but the argument itself comes from deterministic Python, not the model.
 
 ## Hardening — we red-teamed our own gate first
 
-Two rounds of adversarial audit against this bridge specifically
-(`docs/RED_TEAM_REPORT.md`); CORVUS and CRONOS internals were read, never
-modified. The findings that shaped the current code:
+Two rounds of adversarial audit against this bridge specifically (`docs/RED_TEAM_REPORT.md`); CORVUS and CRONOS internals were read, never modified. The findings that shaped the current code:
 
 | # | Finding | Fix |
 |---|---|---|
@@ -269,55 +249,24 @@ modified. The findings that shaped the current code:
 | RT-09 | The baseline read ran unlocked while sharing a store with the locked write phase | Wrapped in the same `threading.Lock` as the writes |
 | RT-10 | A drip-feed attacker (one tactic per message) never crossed the single-message gate | A bounded 6-message per-user window escalates on the *union* of frameworks (see above) |
 
-RT-05 (a CLI-only `os.environ` thread-safety nit in `benchmark.py`) is
-documented and left open — low risk until the benchmark is ever parallelized.
+RT-05 (a CLI-only `os.environ` thread-safety nit in `benchmark.py`) is documented and left open — low risk until the benchmark is ever parallelized.
 
----
+## Qwen integration
 
-## Web page and docs
-
-The site is live on Vercel at **[wolf-and-cronos.vercel.app](https://wolf-and-cronos.vercel.app)** — a trilingual (EN/ES/中文) hub (`web/index.html`) linking to the CRONOS showcase (`web/cronos.html`), the Wolf demo (`web/demo.html`), the live console (`web/dashboard.html`), the chat page (`web/chat.html`), and the integration overview (`web/overview.html`). The adversarial audit behind the RT-01/RT-04/RT-08/RT-10 fixes referenced above is in [`docs/RED_TEAM_REPORT.md`](docs/RED_TEAM_REPORT.md).
-
----
-
-## Qwen Integration
-
-`corvus_cronos/qwen_client.py` wraps the **Alibaba Cloud DashScope international
-endpoint** (`dashscope-intl.aliyuncs.com/compatible-mode/v1`) directly over `requests`
-— no `openai` SDK dependency — calling `qwen-plus` for chat completions, with
-exponential-backoff retry (2 retries, 0.5s base) and a fixed system prompt that
-explains the six-agent (L1–L6) verdict it is about to narrate.
+`corvus_cronos/qwen_client.py` wraps the **Alibaba Cloud DashScope international endpoint** (`dashscope-intl.aliyuncs.com/compatible-mode/v1`) directly over `requests` — no `openai` SDK dependency — calling `qwen-plus` for chat completions, with exponential-backoff retry (2 retries, 0.5s base) and a fixed system prompt that explains the six-agent (L1–L6) verdict it is about to narrate.
 
 Qwen (`qwen-plus` via DashScope) provides the **narrative layer only**:
 
-- The deterministic verdict is sealed BEFORE Qwen is called — CORVUS's six
-  independent agents (Grice, Carnegie, Aristotle, Berne, Linguistics, Peirce) vote
-  and the corroboration gate closes first.
-- Qwen receives a read-only summary of that sealed verdict and produces the
-  negotiation transcript, plus an auto-generated devil's-advocate counter-hypothesis.
-- Swapping Qwen for any other model changes the wording — never the verdict, never
-  a single bit of the sealed payload.
-- `--live-wolf` lets `qwen-max` improvise the attacker side of the demo live instead
-  of reciting a scripted transcript.
+- The deterministic verdict is sealed BEFORE Qwen is called — CORVUS's six independent agents vote and the corroboration gate closes first.
+- Qwen receives a read-only summary of that sealed verdict and produces the negotiation transcript, plus an auto-generated devil's-advocate counter-hypothesis.
+- Swapping Qwen for any other model changes the wording — never the verdict, never a single bit of the sealed payload.
+- `--live-wolf` lets `qwen-max` improvise the attacker side of the demo live instead of reciting a scripted transcript.
 
-```bash
-export DASHSCOPE_API_KEY="sk-..."
-python3 scripts/demo.py
-```
-
-Without `DASHSCOPE_API_KEY`, the system runs fully deterministically (offline
-fallback narration) — the qwen_client surfaces the actual API failure text rather
-than a misleading "no key set" message if a key IS configured but the call fails.
-
----
+Without `DASHSCOPE_API_KEY`, the system runs fully deterministically (offline fallback narration) — the qwen_client surfaces the actual API failure text rather than a misleading "no key set" message if a key IS configured but the call fails.
 
 ## Benchmark
 
-`benchmark/benchmark.py` compares single-arbiter (gate threshold = 1) against
-multi-agent consensus (gate threshold = 2) on a built-in labeled corpus. We are
-not publishing the comparison numbers yet: the corpus is synthetic and the
-system has not been deployed to Alibaba Cloud or run end to end against the
-live Qwen API. Real FPR/FNR figures will replace this note once both are done.
+`benchmark/benchmark.py` compares single-arbiter (gate threshold = 1) against multi-agent consensus (gate threshold = 2) on a built-in labeled corpus. We are not publishing the comparison numbers yet: the corpus is synthetic and the system has not been deployed to Alibaba Cloud or run end to end against the live Qwen API. Real FPR/FNR figures will replace this note once both are done.
 
 ```bash
 python3 benchmark/benchmark.py
@@ -329,8 +278,7 @@ python3 benchmark/benchmark.py
 
 ```bash
 # Dependencies — the repo is self-contained; CORVUS and CRONOS ship inside it
-pip install requests   # HTTP client used for Qwen narration (see requirements.txt)
-pip install "mcp>=1.0.0"   # only needed to run the MCP servers
+pip install -r requirements.txt        # requests (Qwen), fastapi + uvicorn (API), mcp (servers)
 
 # Demo (deterministic, no API key needed)
 python3 scripts/demo.py
@@ -338,21 +286,15 @@ python3 scripts/demo.py
 # Demo with Qwen narration
 DASHSCOPE_API_KEY=sk-... python3 scripts/demo.py
 
-# Benchmark
-python3 benchmark/benchmark.py
-
 # Tests — all three suites
 python3 -m pytest tests/ -v            # bridge
 (cd corvus && python3 -m pytest -q)    # detection engine
 (cd cronos && python3 -m pytest -q)    # audit engine
 ```
 
----
-
 ## MCP servers — plug the engine into any agent
 
-Both engines expose their full API over the Model Context Protocol, from
-this repo, with no external services:
+Both engines expose their full API over the Model Context Protocol, from this repo, with no external services:
 
 ```json
 {
@@ -376,30 +318,11 @@ this repo, with no external services:
 | `cronos` | `cronos_open_trace`, `cronos_add_hypothesis`, `cronos_add_evidence`, `cronos_discard_hypothesis`, `cronos_record_tool_call`, `cronos_record_recall`, `cronos_close_trace`, `cronos_explain_trace`, `cronos_list_traces`, `cronos_verify_chain` |
 | `corvus` | `analyze_message`, `get_user_baseline`, `get_user_history`, `get_channel_stats`, `export_audit_chain`, `verify_audit_chain`, `corvus_info` |
 
-An agent (Claude, a Qwen-based assistant, a CI pipeline) can open a CRONOS
-trace, register hypotheses and evidence as it works, and close it with a
-sealed, hash-chained record — while CORVUS answers "is this message trying
-to manipulate me?" on demand.
-
-CRONOS has been exercised heavily as an MCP server driving real
-investigation sessions in **Claude Code and Codex** — the trace
-discipline, quality tiers, and confidence ceilings shown here come from
-that daily use, not from a demo script. The Qwen-native path below brings
-the same discipline to DashScope models; its live end-to-end validation
-against the deployed Alibaba endpoint is the next step, and its results
-will be reported when they exist — not before.
-
----
+CRONOS has been exercised heavily as an MCP server driving real investigation sessions in **Claude Code and Codex** — the trace discipline, quality tiers, and confidence ceilings come from that daily use, not from a demo script. The Qwen-native path below brings the same discipline to DashScope models; its live end-to-end validation against the deployed Alibaba endpoint is the next step, and its results will be reported when they exist — not before.
 
 ## Qwen-native agent driver (`corvus_cronos/qwen_agent.py`)
 
-Qwen models do not speak MCP — they speak OpenAI-compatible function
-calling through DashScope. `QwenCronosAgent` closes that gap: it hands
-`qwen-max` the exact same ten CRONOS tools as the MCP server (as
-`tools` schemas), runs the agent loop server-side, and executes every
-call against the real `TraceStore`. A Qwen-driven trace and a
-Claude-driven trace are indistinguishable in the database — same chain,
-same quality scoring, same confidence ceilings.
+Qwen models do not speak MCP — they speak OpenAI-compatible function calling through DashScope. `QwenCronosAgent` closes that gap: it hands `qwen-max` the exact same ten CRONOS tools as the MCP server (as `tools` schemas), runs the agent loop server-side, and executes every call against the real `TraceStore`. A Qwen-driven trace and a Claude-driven trace are indistinguishable in the database — same chain, same quality scoring, same confidence ceilings.
 
 ```python
 from corvus_cronos.qwen_agent import QwenCronosAgent
@@ -416,20 +339,13 @@ print(outcome.chain_ok)           # verified after the run
 
 Honest-degradation guarantees built in:
 
-- A trace the model opened but never sealed is auto-closed by the driver
-  with confidence `0/100` and an explicit `UNSEALED-BY-MODEL` marker — an
-  abandoned trace can never masquerade as a completed one.
-- Tool errors (unknown tool, malformed arguments, operating on a closed
-  trace) are returned to the model as tool results, never swallowed.
-- Without `DASHSCOPE_API_KEY` the constructor refuses to build: this
-  driver exists to run the live model; there is no simulation mode.
-
----
+- A trace the model opened but never sealed is auto-closed by the driver with confidence `0/100` and an explicit `UNSEALED-BY-MODEL` marker — an abandoned trace can never masquerade as a completed one.
+- Tool errors (unknown tool, malformed arguments, operating on a closed trace) are returned to the model as tool results, never swallowed.
+- Without `DASHSCOPE_API_KEY` the constructor refuses to build: this driver exists to run the live model; there is no simulation mode.
 
 ## Hosted API (`api_server.py`) — the Alibaba Cloud product
 
-FastAPI service designed for the same ECS + Docker + Caddy deployment
-pattern already proven with `rebound` and `raven-memory`:
+FastAPI service designed for the same ECS + Docker + Caddy deployment pattern already proven with `rebound` and `raven-memory`:
 
 | Endpoint | What it does |
 |---|---|
@@ -440,39 +356,25 @@ pattern already proven with `rebound` and `raven-memory`:
 | `GET /traces` | recent sealed trace headers |
 | `GET /health` | liveness + configuration surface (no secrets) |
 
-The narration is the honest Qwen role: a deterministic engine cannot
-explain to a person, in their own language, why message four smells like
-a scam — `qwen-plus` can, reading a read-only summary of the already
-sealed verdict. Offline, the narration field says so explicitly instead
-of pretending.
+The narration is the honest Qwen role: a deterministic engine cannot explain to a person, in their own language, why message four smells like a scam — `qwen-plus` can, reading a read-only summary of the already sealed verdict. Offline, the narration field says so explicitly instead of pretending.
 
-Security: `X-API-Token` (constant-time comparison) on every data
-endpoint when `BRIDGE_API_TOKEN` is set — with a loud startup warning
-when it is not; CORS scoped via `BRIDGE_ALLOWED_ORIGINS`; text capped at
-the bridge's 50 KB limit.
+Security: `X-API-Token` (constant-time comparison) on every data endpoint when `BRIDGE_API_TOKEN` is set — with a loud startup warning when it is not; CORS scoped via `BRIDGE_ALLOWED_ORIGINS`; text capped at the bridge's 50 KB limit.
 
 ```bash
 # local
 uvicorn api_server:app --host 0.0.0.0 --port 8022
 
 # ECS
-docker build -t corvus-cronos .
+docker build -t wolf-and-cronos .
 docker run -d -p 8022:8022 -v /opt/ccb-data:/data \
     -e BRIDGE_API_TOKEN=$(openssl rand -hex 16) \
     -e DASHSCOPE_API_KEY=sk-... \
-    corvus-cronos
+    wolf-and-cronos
 ```
-
----
 
 ## Nightly red-team (`scripts/redteam_nightly.py`) — where the numbers come from
 
-The published FPR/FNR figures for this product will come from here: a
-cron job on the ECS instance where `qwen-max` generates a fresh, labeled
-corpus of stacked-tactic attacks and deceptively-similar benign messages
-every night, the CORVUS gate judges them, and the confusion matrix is
-written to a dated report (`results/redteam_<date>.{json,md}`) and sealed
-as a CRONOS trace of its own.
+The published FPR/FNR figures for this product will come from here: a cron job on the ECS instance where `qwen-max` generates a fresh, labeled corpus of stacked-tactic attacks and deceptively-similar benign messages every night, the CORVUS gate judges them, and the confusion matrix is written to a dated report (`results/redteam_<date>.{json,md}`) and sealed as a CRONOS trace of its own.
 
 ```
 15 3 * * *  cd /opt/wolf-and-cronos && \
@@ -481,13 +383,8 @@ as a CRONOS trace of its own.
 
 Two refusal rules keep the numbers honest:
 
-- No `DASHSCOPE_API_KEY` → exit 2. There is no offline fallback corpus;
-  numbers that did not come from the live generator are never published
-  as if they did.
-- Fewer than 6 usable samples parsed from the model → exit 3. A
-  three-sample FPR is noise, and noise does not get a dated report.
-
----
+- No `DASHSCOPE_API_KEY` → exit 2. There is no offline fallback corpus; numbers that did not come from the live generator are never published as if they did.
+- Fewer than 6 usable samples parsed from the model → exit 3. A three-sample FPR is noise, and noise does not get a dated report.
 
 ## Tests
 
@@ -510,8 +407,6 @@ Two refusal rules keep the numbers honest:
 | L5 | Linguistics — SDA-NR / CLI / Zipf | Cognitive load, unnaturally low error rates (scripted text) |
 | L6 | Peirce — Abductive Semiotics | Firstness / Secondness / Thirdness synthesis of L1-L5 |
 
----
-
 ## Determinism invariants
 
 - All scoring uses `fractions.Fraction` — zero floats in any verdict field.
@@ -519,21 +414,19 @@ Two refusal rules keep the numbers honest:
 - CRONOS chain: each entry hashes the previous entry — any retroactive edit breaks the chain.
 - Qwen narration is outside the sealed payload — swapping models cannot alter the verdict.
 
----
+## Web page and docs
+
+The site is live on Vercel at **[wolf-and-cronos.vercel.app](https://wolf-and-cronos.vercel.app)** — a trilingual (EN/ES/中文) hub (`web/index.html`) linking to the CRONOS showcase (`web/cronos.html`), the Wolf demo (`web/demo.html`), the live console (`web/dashboard.html`), the chat page (`web/chat.html`), and the integration overview (`web/overview.html`). The adversarial audit behind the RT fixes above is in [`docs/RED_TEAM_REPORT.md`](docs/RED_TEAM_REPORT.md).
 
 ## Built with
 
 **Qwen Cloud** — `qwen-max` (the Wolf's live attacks and the CRONOS-disciplined agent driver) and `qwen-plus` (the sealed-verdict narration), both via the **Alibaba Cloud DashScope** international endpoint, called directly over `requests` (no `openai` SDK). Python 3.12, `fractions.Fraction` (zero floats in the sealed path), SHA-256 hash chains, FastAPI + Uvicorn (the hosted API, targeted at **Alibaba Cloud ECS** + Docker + Caddy), the Model Context Protocol (the CRONOS and CORVUS MCP servers), and a self-contained static frontend on Vercel.
 
----
-
 ## Authors and provenance
 
 **Anna Tchijova** — CRONOS, CORVUS, and this integration, VIGÍA AI Collective 2026.
 
-CRONOS and CORVUS were built by Anna Tchijova during the hackathon period
-and are published for the first time here, as components of this product.
-Development dates, verifiable from the original git histories:
+CRONOS and CORVUS were built by Anna Tchijova during the hackathon period and are published for the first time here, as components of this product. Development dates, verifiable from the original git histories:
 
 | Component | First commit | Latest |
 |---|---|---|
@@ -543,5 +436,4 @@ Development dates, verifiable from the original git histories:
 
 ## License
 
-Apache License 2.0 — see [LICENSE](LICENSE). The license covers the entire
-repository, including the vendored `cronos/` and `corvus/` engines.
+Apache License 2.0 — see [LICENSE](LICENSE). The license covers the entire repository, including the vendored `cronos/` and `corvus/` engines.
