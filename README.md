@@ -437,3 +437,100 @@ CRONOS and CORVUS were built by Anna Tchijova during the hackathon period and ar
 ## License
 
 Apache License 2.0 — see [LICENSE](LICENSE). The license covers the entire repository, including the vendored `cronos/` and `corvus/` engines.
+
+---
+
+## Anthem — *The Wolf and the Watchdogs*
+
+*by [Olga Vasilieva](https://suno.com/song/9b903800-7591-4817-a393-9eb8c188dd9e)*
+
+**(Intro)**
+Lights down. Terminal glows.
+One message... then another.
+The wolf never starts with a threat.
+It starts with trust.
+
+**(Verse 1)**
+"Hi Anna..." — simple words, nothing to fear,
+A friendly smile whispered in your ear.
+Five short messages, a perfect disguise,
+Building a bridge with carefully crafted lies.
+Rapport and flattery, confidence won,
+The trap is already quietly begun.
+Scarcity, pressure, authority's mask,
+By the fifth message comes the dangerous task.
+
+**(Pre-Chorus)**
+Truth doesn't panic.
+Truth leaves a trace.
+Every hidden motive
+Has a visible face.
+
+**(Chorus)**
+CORVUS sees what whispers hide,
+Six sharp minds all side by side.
+No single voice decides what's true,
+Consensus breaks deception through.
+CRONOS seals what time can't erase,
+SHA-256 guards every trace.
+Delete the record if you dare—
+The missing truth is written there.
+
+**(Verse 2)**
+Grice hears silence speaking loud,
+Carnegie reads the charming crowd.
+Aristotle weighs heart and mind,
+Berne reveals control behind.
+Linguistics catches every shift,
+Patterns no deceiver can lift.
+Peirce connects what others found,
+Turning scattered clues to solid ground.
+
+**(Pre-Chorus)**
+One alarm is only noise.
+Evidence demands more voices.
+Two independent paths agree—
+Only then the verdict speaks.
+
+**(Chorus)**
+CORVUS sees what whispers hide,
+Six sharp minds all side by side.
+No single voice decides what's true,
+Consensus breaks deception through.
+CRONOS seals what time can't erase,
+SHA-256 guards every trace.
+Delete the record if you dare—
+The missing truth is written there.
+
+**(Bridge)**
+Qwen tells the story, never makes the call,
+The verdict stands before the words at all.
+Read-only witness, explaining the case,
+While deterministic proof holds its place.
+Fraction precision, not floating dreams,
+Every decision is exactly what it seems.
+
+**(Breakdown)**
+L1... L2... L3... L4... L5... L6...
+Six watchdogs.
+One gate.
+Zero shortcuts.
+Zero hidden hands.
+
+**(Final Chorus)**
+The wolf can whisper, the wolf can pretend,
+But evidence survives until the end.
+CORVUS listens, CRONOS remembers,
+Guarding every digital ember.
+Trust is earned, not blindly given,
+Proof is stronger than persuasion.
+When deception writes its final line,
+The truth remains—
+Forever signed.
+
+**(Outro)**
+One conversation.
+Six perspectives.
+One sealed verdict.
+One unbroken chain.
+The wolf never gets the final word.
