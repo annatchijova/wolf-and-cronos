@@ -112,7 +112,14 @@
     background: linear-gradient(var(--bg1), var(--bg1)) padding-box, var(--grad) border-box;
   }
   .foot .qpill b { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .foot a { color: var(--lavender); }
+  .foot a {
+    color: var(--lavender); text-decoration: none;
+    border: 1px solid var(--line-strong); border-radius: 999px;
+    padding: 8px 18px; font-weight: 600;
+    transition: border-color .15s, color .15s, background .15s, transform .15s;
+  }
+  .foot a:hover { color: var(--ink); border-color: var(--fuchsia);
+    background: rgba(217, 70, 239, .1); transform: translateY(-1px); }
 </style>
 </head>
 <body>
