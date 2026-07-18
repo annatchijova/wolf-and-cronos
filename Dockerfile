@@ -17,5 +17,5 @@ VOLUME /data
 ENV BRIDGE_DB_PATH=/data/negotiation.db \
     BRIDGE_MEMORY_DB_PATH=/data/corvus_memory.db
 
-EXPOSE 8000
-CMD ["uvicorn", "api_server:app", "--host", "0.0.0.0", "--port", "8000"]
+EXPOSE 8022
+CMD ["uvicorn", "api_server:app", "--host", "0.0.0.0", "--port", "8022"]

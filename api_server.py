@@ -30,7 +30,7 @@ or removing the narrator cannot move the verdict by a single bit.
 
 Run
 ---
-    uvicorn api_server:app --host 0.0.0.0 --port 8000
+    uvicorn api_server:app --host 0.0.0.0 --port 8022
 """
 
 from __future__ import annotations

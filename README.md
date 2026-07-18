@@ -405,11 +405,11 @@ the bridge's 50 KB limit.
 
 ```bash
 # local
-uvicorn api_server:app --host 0.0.0.0 --port 8000
+uvicorn api_server:app --host 0.0.0.0 --port 8022
 
 # ECS
 docker build -t corvus-cronos .
-docker run -d -p 8000:8000 -v /opt/ccb-data:/data \
+docker run -d -p 8022:8022 -v /opt/ccb-data:/data \
     -e BRIDGE_API_TOKEN=$(openssl rand -hex 16) \
     -e DASHSCOPE_API_KEY=sk-... \
     corvus-cronos
