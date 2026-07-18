@@ -54,6 +54,10 @@
     letter-spacing: -.02em; color: #fff;
     box-shadow: 0 6px 24px rgba(168, 85, 247, .45), inset 0 1px 0 rgba(255,255,255,.35);
   }
+  a.mark { text-decoration: none; cursor: pointer;
+    transition: transform .15s, box-shadow .15s; }
+  a.mark:hover { transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(168, 85, 247, .65), inset 0 1px 0 rgba(255,255,255,.35); }
   .wordmark h1 { margin: 0; font-size: clamp(21px, 1.4vw + 8px, 30px); letter-spacing: .05em; font-weight: 700; }
   .wordmark h1 .x {
     background: var(--grad); -webkit-background-clip: text; background-clip: text;
@@ -282,7 +286,7 @@
 <body>
 <main>
   <header>
-    <div class="mark">C×C</div>
+    <a class="mark" href="index.html" title="Home"><span>C×C</span></a>
     <div class="wordmark">
       <h1>CORVUS <span class="x">×</span> CRONOS</h1>
       <div class="sub" data-i18n="sub"></div>
