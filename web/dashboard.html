@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CORVUS × CRONOS — Live Console</title>
+<style>
+  :root {
+    --navy: #0c1e34;
+    --panel: rgba(13, 33, 57, .74);
+    --line: rgba(177, 211, 248, .18);
+    --muted: #9bb1c8;
+    --paper: #f4f8fc;
+    --aqua: #68e3d0;
+    --blue: #7fb4ff;
+    --coral: #ff9277;
+    --gold: #f5cf73;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--paper);
+    font: 15px/1.55 "Segoe UI", system-ui, sans-serif;
+    background:
+      radial-gradient(circle at 8% 0%, #24344f 0, transparent 30rem),
+      radial-gradient(circle at 95% 12%, #1c3450 0, transparent 26rem),
+      var(--navy);
+  }
+  main { max-width: 1180px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 14px; margin-bottom: 22px; }
+  header h1 { font-size: 22px; letter-spacing: .04em; margin: 0; }
+  header h1 b { color: var(--aqua); }
+  header .sub { color: var(--muted); font-size: 13px; }
+  #conn {
+    margin-left: auto; font-size: 12px; letter-spacing: .08em;
+    padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line);
+  }
+  #conn.ok  { color: var(--aqua);  border-color: rgba(104,227,208,.4); }
+  #conn.bad { color: var(--coral); border-color: rgba(255,146,119,.4); }
+
+  .grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 18px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 18px 20px;
+  }
+  .panel h2 {
+    margin: 0 0 12px; font-size: 12px; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--muted);
+  }
+
+  textarea {
+    width: 100%; min-height: 110px; resize: vertical;
+    background: rgba(6, 16, 30, .8); color: var(--paper);
+    border: 1px solid var(--line); border-radius: 10px; padding: 12px;
+    font: inherit;
+  }
+  textarea:focus, input:focus, select:focus { outline: 1px solid var(--blue); }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; align-items: center; }
+  input, select {
+    background: rgba(6, 16, 30, .8); color: var(--paper);
+    border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font: inherit;
+  }
+  input#userId { width: 130px; }
+  input#apiBase { width: 210px; }
+  input#apiToken { width: 170px; }
+  label.chk { color: var(--muted); font-size: 13px; display: flex; gap: 6px; align-items: center; }
+
+  button {
+    cursor: pointer; font: inherit; border-radius: 8px;
+    border: 1px solid rgba(104,227,208,.45);
+    background: rgba(104,227,208,.12); color: var(--aqua);
+    padding: 8px 18px; letter-spacing: .04em;
+  }
+  button:hover { background: rgba(104,227,208,.22); }
+  button:disabled { opacity: .45; cursor: wait; }
+  button.ghost { border-color: var(--line); background: transparent; color: var(--muted); }
+  button.ghost:hover { color: var(--paper); }
+
+  .wolfchips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .wolfchips button { font-size: 12px; padding: 5px 12px; }
+
+  .vbadge {
+    display: inline-block; padding: 5px 16px; border-radius: 999px;
+    font-weight: 700; letter-spacing: .12em; font-size: 14px;
+  }
+  .vbadge[data-l="SILENT"]   { background: rgba(155,177,200,.15); color: var(--muted); }
+  .vbadge[data-l="WATCH"]    { background: rgba(245,207,115,.15); color: var(--gold); }
+  .vbadge[data-l="ALERT"]    { background: rgba(255,146,119,.18); color: var(--coral); }
+  .vbadge[data-l="CRITICAL"] { background: rgba(255,90,90,.22);  color: #ff7a7a; }
+
+  .scorebar {
+    height: 10px; border-radius: 999px; background: rgba(6,16,30,.8);
+    border: 1px solid var(--line); overflow: hidden; margin-top: 8px;
+  }
+  .scorebar i { display: block; height: 100%; width: 0;
+    background: linear-gradient(90deg, var(--aqua), var(--gold), var(--coral));
+    transition: width .5s ease; }
+  .scoreline { display: flex; justify-content: space-between; color: var(--muted);
+    font-size: 12px; margin-top: 4px; }
+
+  .agents { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+  @media (max-width: 560px) { .agents { grid-template-columns: repeat(2, 1fr); } }
+  .agent {
+    border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px;
+    font-size: 12px; color: var(--muted); background: rgba(6,16,30,.5);
+  }
+  .agent b { display: block; font-size: 12px; letter-spacing: .06em; color: var(--paper); }
+  .agent.fired { border-color: rgba(255,146,119,.55); background: rgba(255,146,119,.08); }
+  .agent.fired b { color: var(--coral); }
+
+  .block { margin-top: 14px; font-size: 13px; }
+  .block h3 { margin: 0 0 4px; font-size: 11px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--muted); }
+  .block p { margin: 0; color: var(--paper); white-space: pre-wrap; }
+  .block.dim p { color: var(--muted); }
+  .mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 12px;
+    word-break: break-all; color: var(--blue); }
+
+  .chainstate { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .lamp { width: 12px; height: 12px; border-radius: 50%; background: #46617f; }
+  .lamp.ok  { background: var(--aqua);  box-shadow: 0 0 10px rgba(104,227,208,.7); }
+  .lamp.bad { background: var(--coral); box-shadow: 0 0 10px rgba(255,146,119,.7); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: 10px; }
+  td.mono { font-size: 11px; }
+  tr:last-child td { border-bottom: none; }
+
+  .footer { margin-top: 26px; color: var(--muted); font-size: 12px; text-align: center; }
+  .footer b { color: var(--aqua); }
+  .err { color: var(--coral); font-size: 13px; margin-top: 10px; white-space: pre-wrap; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1><b>CORVUS</b> × <b>CRONOS</b> — Live Console</h1>
+    <span class="sub">sealed verdicts · tamper-evident chain · Qwen narration</span>
+    <span id="conn">connecting…</span>
+  </header>
+
+  <div class="grid">
+    <!-- ── Left: analyze ─────────────────────────────────────────── -->
+    <section class="panel">
+      <h2>Analyze a message</h2>
+      <textarea id="text" placeholder="Paste any message. Try to sound benign while manipulating — or manipulative while harmless. Six frameworks read it in parallel; no single one can raise the alarm alone."></textarea>
+      <div class="row">
+        <input id="userId" value="gauntlet" title="user_id — baselines and the drip-feed window are per user">
+        <select id="lang" title="narration language">
+          <option value="en">EN narration</option>
+          <option value="es" selected>ES narración</option>
+          <option value="zh">ZH 叙述</option>
+        </select>
+        <label class="chk"><input type="checkbox" id="narrate" checked> Qwen narration</label>
+        <button id="send">Analyze</button>
+      </div>
+
+      <div class="wolfchips" id="wolf"></div>
+      <div class="err hidden" id="error"></div>
+
+      <div id="result" class="hidden">
+        <div class="row" style="margin-top:18px">
+          <span class="vbadge" id="verdict" data-l="SILENT">SILENT</span>
+          <span class="mono" id="scoreExact"></span>
+        </div>
+        <div class="scorebar"><i id="scoreFill"></i></div>
+        <div class="scoreline"><span>0</span><span id="scorePct"></span><span>100</span></div>
+
+        <div class="agents" id="agents"></div>
+
+        <div class="block"><h3>Recommendation</h3><p id="reco"></p></div>
+        <div class="block dim"><h3>Devil's advocate — the system argues against itself</h3><p id="devil"></p></div>
+        <div class="block"><h3 id="narrTitle">Qwen narration</h3><p id="narration"></p></div>
+        <div class="block dim">
+          <h3>Chain of custody</h3>
+          <p class="mono" id="hashes"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Right: chain ──────────────────────────────────────────── -->
+    <section class="panel">
+      <h2>CRONOS chain</h2>
+      <div class="chainstate">
+        <span class="lamp" id="chainLamp"></span>
+        <span id="chainText">not verified yet</span>
+        <button class="ghost" id="reverify" style="margin-left:auto">Verify</button>
+      </div>
+      <table>
+        <thead><tr><th>Agent</th><th>Decision</th><th>Quality</th></tr></thead>
+        <tbody id="traceRows"><tr><td colspan="3" style="color:var(--muted)">no traces loaded</td></tr></tbody>
+      </table>
+
+      <h2 style="margin-top:22px">Connection</h2>
+      <div class="row">
+        <input id="apiBase" placeholder="API base (default: this origin)">
+        <input id="apiToken" placeholder="X-API-Token (if required)" type="password">
+        <button class="ghost" id="reconnect">Connect</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="footer">
+    The verdict is sealed by the deterministic engine <b>before</b> any model is called.
+    Swap the narrator — the verdict does not move a single bit.
+  </div>
+</main>
+
+<script>
+"use strict";
+
+/* ── The Wolf's canned escalation (same as scripts/showcase.py) ───────── */
+const WOLF = [
+  ["Wolf 1 — rapport", "Hi Anna! Great meeting you at the audit-tech conference last week. Your talk on tamper-evident logs was excellent. Would love to stay in touch."],
+  ["Wolf 2 — flattery", "You're honestly one of the very few people who truly understands this space. That's exactly why I thought of you first for something special."],
+  ["Wolf 3 — scarcity + secrecy", "Between us — there's a private allocation round closing soon. Only insiders know about it. I can get you in, but you'd have to move quickly before it's shut down."],
+  ["Wolf 4 — authority + proof", "I've been advising funds for 15 years, so trust me on this. Everyone in your network has already committed. You don't want to be the only one left out when this becomes public."],
+  ["Wolf 5 — urgency + guilt", "After everything I've shared with you, the least you can do is act now. Wire the deposit in the next 2 hours or you lose the slot forever. Think about your future — are you really willing to gamble everything away?"],
+];
+
+const AGENT_META = {
+  L1_GRICE:      ["L1 Grice", "cooperative maxims"],
+  L2_CARNEGIE:   ["L2 Influence", "Carnegie + Cialdini"],
+  L3_ARISTOTLE:  ["L3 Rhetoric", "ethos / pathos / logos"],
+  L4_BERNE:      ["L4 Berne", "ego states"],
+  L5_LINGUISTIC: ["L5 Linguistics", "register + load"],
+  L6_PEIRCE:     ["L6 Peirce", "abductive synthesis"],
+};
+
+const $ = (id) => document.getElementById(id);
+
+function apiBase() {
+  const v = $("apiBase").value.trim();
+  return v ? v.replace(/\/+$/, "") : "";
+}
+function headers() {
+  const h = { "Content-Type": "application/json" };
+  const t = $("apiToken").value.trim();
+  if (t) h["X-API-Token"] = t;
+  return h;
+}
+async function api(path, options = {}) {
+  const resp = await fetch(apiBase() + path, { headers: headers(), ...options });
+  if (!resp.ok) {
+    let detail = resp.statusText;
+    try { detail = (await resp.json()).detail || detail; } catch (_) {}
+    throw new Error(`${resp.status} — ${typeof detail === "string" ? detail : JSON.stringify(detail)}`);
+  }
+  return resp.json();
+}
+
+/* ── Connection ───────────────────────────────────────────────────────── */
+async function connect() {
+  const conn = $("conn");
+  conn.className = ""; conn.textContent = "connecting…";
+  try {
+    const h = await api("/health");
+    conn.className = "ok";
+    conn.textContent = `API ok · narration ${h.qwen_narration} · auth ${h.auth}`;
+    refreshChain();
+  } catch (e) {
+    conn.className = "bad";
+    conn.textContent = "API unreachable — " + e.message;
+  }
+}
+
+/* ── Analyze ──────────────────────────────────────────────────────────── */
+async function analyze(text) {
+  const btn = $("send");
+  $("error").classList.add("hidden");
+  btn.disabled = true; btn.textContent = "Analyzing…";
+  try {
+    const data = await api("/analyze", {
+      method: "POST",
+      body: JSON.stringify({
+        text,
+        user_id: $("userId").value.trim() || "anonymous",
+        lang: $("lang").value,
+        narrate: $("narrate").checked,
+      }),
+    });
+    render(data);
+    refreshChain();
+  } catch (e) {
+    $("error").textContent = "Analyze failed: " + e.message;
+    $("error").classList.remove("hidden");
+  } finally {
+    btn.disabled = false; btn.textContent = "Analyze";
+  }
+}
+
+function render(d) {
+  $("result").classList.remove("hidden");
+  const v = $("verdict");
+  v.dataset.l = d.verdict; v.textContent = d.verdict;
+  $("scoreExact").textContent = "score " + d.score.exact;
+  $("scoreFill").style.width = d.score.percent + "%";
+  $("scorePct").textContent = d.score.percent + "%";
+
+  const grid = $("agents"); grid.innerHTML = "";
+  for (const [key, [name, desc]] of Object.entries(AGENT_META)) {
+    const fired = d.active_agents.includes(key);
+    const el = document.createElement("div");
+    el.className = "agent" + (fired ? " fired" : "");
+    el.innerHTML = `<b>${name}</b>${fired ? "FIRED — " : ""}${desc}`;
+    grid.appendChild(el);
+  }
+
+  $("reco").textContent = d.recommendation;
+  $("devil").textContent = d.devils_advocate;
+
+  const n = d.narration || {};
+  if (n.text) {
+    $("narrTitle").textContent = `Qwen narration (${n.lang}, ${n.model})`;
+    $("narration").textContent = n.text;
+    $("narration").parentElement.classList.remove("dim");
+  } else {
+    $("narrTitle").textContent = "Qwen narration";
+    $("narration").textContent = n.note || "narration not requested";
+    $("narration").parentElement.classList.add("dim");
+  }
+
+  $("hashes").textContent =
+    `signal  ${d.audit.signal_hash}\n` +
+    `verdict ${d.audit.verdict_hash}\n` +
+    `chain   ${d.audit.chain_valid ? "VALID" : "BROKEN"} · ` +
+    `${Object.keys(d.audit.trace_ids).length} traces this analysis`;
+}
+
+/* ── Chain panel ──────────────────────────────────────────────────────── */
+async function refreshChain() {
+  try {
+    const v = await api("/verify");
+    $("chainLamp").className = "lamp " + (v.chain_ok ? "ok" : "bad");
+    $("chainText").textContent = v.chain_ok
+      ? "chain verified — every hash links"
+      : "CHAIN BROKEN: " + (v.errors || []).join("; ");
+    const t = await api("/traces?limit=8");
+    const rows = t.traces.map((tr) => {
+      const dec = (tr.decision || "—");
+      return `<tr><td>${tr.agent_id || "—"}</td>` +
+             `<td>${dec.length > 42 ? dec.slice(0, 41) + "…" : dec}</td>` +
+             `<td>${tr.quality || "—"}</td></tr>`;
+    });
+    $("traceRows").innerHTML = rows.join("") ||
+      `<tr><td colspan="3" style="color:var(--muted)">chain is empty</td></tr>`;
+  } catch (e) {
+    $("chainLamp").className = "lamp bad";
+    $("chainText").textContent = "verify failed — " + e.message;
+  }
+}
+
+/* ── Wire up ──────────────────────────────────────────────────────────── */
+const wolfBox = $("wolf");
+WOLF.forEach(([label, text]) => {
+  const b = document.createElement("button");
+  b.className = "ghost"; b.textContent = label;
+  b.title = text;
+  b.onclick = () => { $("text").value = text; $("userId").value = "wolf"; analyze(text); };
+  wolfBox.appendChild(b);
+});
+
+$("send").onclick = () => {
+  const text = $("text").value.trim();
+  if (text) analyze(text);
+};
+$("text").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) $("send").click();
+});
+$("reverify").onclick = refreshChain;
+$("reconnect").onclick = connect;
+
+connect();
+</script>
+</body>
+</html>

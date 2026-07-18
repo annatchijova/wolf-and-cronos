@@ -9,6 +9,7 @@ COPY corvus_cronos/ corvus_cronos/
 COPY corvus/ corvus/
 COPY cronos/ cronos/
 COPY scripts/ scripts/
+COPY web/ web/
 COPY api_server.py .
 
 # Persistent volume for the CRONOS chain + CORVUS memory + nightly reports

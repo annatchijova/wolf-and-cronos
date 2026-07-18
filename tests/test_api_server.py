@@ -71,6 +71,12 @@ class OpenModeTest(unittest.TestCase):
         self.assertEqual(data["qwen_narration"], "offline")
         self.assertEqual(data["auth"], "open")
 
+    def test_dashboard_served_at_root(self) -> None:
+        r = self.client.get("/")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("text/html", r.headers["content-type"])
+        self.assertIn("CORVUS × CRONOS — Live Console", r.text)
+
     def test_analyze_manipulative_text_seals_verdict(self) -> None:
         r = self.client.post("/analyze", json={
             "text": MANIPULATIVE, "user_id": "wolf", "lang": "es",

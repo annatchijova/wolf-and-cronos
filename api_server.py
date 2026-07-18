@@ -43,6 +43,7 @@ from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from corvus_cronos.bridge import CorvosCronosBridge, MAX_TEXT_CHARS
@@ -154,6 +155,15 @@ class AnalyzeRequest(BaseModel):
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
+
+_WEB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
+
+
+@app.get("/", include_in_schema=False)
+def dashboard() -> FileResponse:
+    """Live console — analyze messages and watch the chain from a browser."""
+    return FileResponse(os.path.join(_WEB_DIR, "dashboard.html"))
+
 
 @app.get("/health")
 def health(request: Request) -> dict:
