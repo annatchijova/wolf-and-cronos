@@ -276,12 +276,7 @@ documented and left open — low risk until the benchmark is ever parallelized.
 
 ## Web page and docs
 
-`web/index.html` is a static verification page ("CORVUS × CRONOS — Verifiable
-negotiation") — not yet hosted publicly (Vercel deploy pending). `docs/`
-contains an HTML demo runbook (`DEMO_RUNBOOK.html`), a Spanish master guide
-(`GUIA_MAESTRA_ES.html`), and the red-team report (`RED_TEAM_REPORT.md`) from
-the adversarial audit that produced the RT-01/RT-04/RT-08/RT-10 fixes
-referenced above.
+The site is live on Vercel at **[wolf-and-cronos.vercel.app](https://wolf-and-cronos.vercel.app)** — a trilingual (EN/ES/中文) hub (`web/index.html`) linking to the CRONOS showcase (`web/cronos.html`), the Wolf demo (`web/demo.html`), the live console (`web/dashboard.html`), the chat page (`web/chat.html`), and the integration overview (`web/overview.html`). The adversarial audit behind the RT-01/RT-04/RT-08/RT-10 fixes referenced above is in [`docs/RED_TEAM_REPORT.md`](docs/RED_TEAM_REPORT.md).
 
 ---
 
