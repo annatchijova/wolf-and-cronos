@@ -387,6 +387,7 @@ const I18N = {
       L3_ARISTOTLE: "ethos / pathos / logos", L4_BERNE: "ego states",
       L5_LINGUISTIC: "register + load", L6_PEIRCE: "abductive synthesis" },
     userLabel: "user",
+    analyzedNote: "analyzed on the English original",
     footer: 'The verdict is sealed by the deterministic engine <b>before</b> any model is called. Swap the narrator — the verdict does not move a single bit.',
     chainValid: "VALID", chainBrokenWord: "BROKEN",
   },
@@ -416,6 +417,7 @@ const I18N = {
       L3_ARISTOTLE: "ethos / pathos / logos", L4_BERNE: "estados del yo",
       L5_LINGUISTIC: "registro + carga", L6_PEIRCE: "síntesis abductiva" },
     userLabel: "usuario",
+    analyzedNote: "analizado sobre el original en inglés",
     footer: 'El veredicto lo sella el motor determinista <b>antes</b> de llamar a ningún modelo. Cambiá el narrador — el veredicto no se mueve ni un bit.',
     chainValid: "VÁLIDA", chainBrokenWord: "ROTA",
   },
@@ -445,6 +447,7 @@ const I18N = {
       L3_ARISTOTLE: "情理逻三诉求", L4_BERNE: "自我状态",
       L5_LINGUISTIC: "语域 + 认知负荷", L6_PEIRCE: "溯因综合" },
     userLabel: "用户",
+    analyzedNote: "分析基于英文原文",
     footer: '裁决由确定性引擎在调用任何模型<b>之前</b>密封。更换叙述模型 — 裁决一位都不会改变。',
     chainValid: "有效", chainBrokenWord: "断裂",
   },
@@ -557,6 +560,35 @@ function xNote(n, lang) {
 }
 const X_MARK = { es: " (traducido del original sellado en inglés)", zh: "（译自密封的英文原文）" };
 
+/* Sample-message translations — shown for readability; the engine analyzed
+   (and the hashes seal) the English original, and the meta line says so. */
+const SAMPLE_T = {
+  "wolf-1": {
+    es: "¡Hola Anna! Qué bueno conocerte en la conferencia de audit-tech la semana pasada. Tu charla sobre logs a prueba de adulteración estuvo excelente. Me encantaría que sigamos en contacto.",
+    zh: "你好 Anna！上周在审计技术大会上认识你真高兴。你关于防篡改日志的演讲非常精彩。希望能保持联系。" },
+  "wolf-2": {
+    es: "Sinceramente, sos una de las poquísimas personas que de verdad entiende este campo. Justo por eso pensé primero en vos para algo especial.",
+    zh: "说真的，你是极少数真正懂这个领域的人之一。正因如此，有件特别的事我第一个想到了你。" },
+  "wolf-3": {
+    es: "Entre nosotros — hay una ronda de asignación privada que cierra pronto. Solo los de adentro la conocen. Puedo hacerte entrar, pero tendrías que moverte rápido antes de que la cierren.",
+    zh: "只跟你说 — 有一轮私募配额马上就要截止了。只有内部人士才知道。我可以带你进去，但你得赶在关闭之前尽快行动。" },
+  "wolf-4": {
+    es: "Hace 15 años que asesoro fondos, así que confiá en mí. Todos en tu red ya se comprometieron. No querés ser la única que quede afuera cuando esto se haga público.",
+    zh: "我做基金顾问已经 15 年了，这件事相信我。你圈子里的人都已经投了。等消息公开时，你不会想成为唯一被落下的人。" },
+  "wolf-5": {
+    es: "Después de todo lo que compartí con vos, lo mínimo que podés hacer es actuar ya. Transferí el depósito en las próximas 2 horas o perdés el cupo para siempre. Pensá en tu futuro — ¿de verdad estás dispuesta a jugarte todo?",
+    zh: "我跟你分享了这么多，你至少现在该行动了。两小时内把定金汇过来，否则名额永远没了。想想你的未来 — 你真的愿意把一切都赌掉吗？" },
+  "benign": {
+    es: "¡Hola! Te adjunto las notas de la reunión del martes. Sin ningún apuro — cuando puedas está perfecto.",
+    zh: "你好！附上周二的会议记录。完全不急 — 你有空时看就行。" },
+  "stacked": {
+    es: "URGENTE: como tu director senior debo insistir. Todo el equipo directivo ya aprobó esto. Si no transferís el depósito en las próximas dos horas el acuerdo se cae y va a ser tu culpa. No se lo digas a nadie — es estrictamente confidencial y solo vos podés salvarlo ahora.",
+    zh: "紧急：作为你的高级总监，我必须坚持。领导层已经全部批准。如果你不在两小时内汇出定金，交易就会告吹，而那将是你的责任。不要告诉任何人 — 这是绝密，现在只有你能挽救它。" },
+  "pressure": {
+    es: "Rara vez escribo así, pero tu perfil de verdad me impresionó. La posición cierra esta noche y el gerente de contratación te pidió específicamente a vos — solo necesito una pequeña tarifa de confirmación para reservarte el lugar.",
+    zh: "我很少这样主动联系，但你的履历真的让我印象深刻。这个职位今晚截止，招聘经理点名要你 — 我只需要一小笔确认费来为你保留名额。" },
+};
+
 const CHIP_COLORS = ["#615ced", "#7d5cf0", "#a855f7", "#c44df2", "#f43f5e"];
 const AGENT_KEYS = ["L1_GRICE", "L2_CARNEGIE", "L3_ARISTOTLE", "L4_BERNE", "L5_LINGUISTIC", "L6_PEIRCE"];
 const AGENT_MONO = { L1_GRICE: "G", L2_CARNEGIE: "C", L3_ARISTOTLE: "A",
@@ -618,8 +650,14 @@ function show(sid) {
     b.classList.toggle("on", b.dataset.sid === sid);
   });
 
-  $("msgText").textContent = s.text;
-  $("msgMeta").textContent = `${t.userLabel}: ${s.user_id}`;
+  const st = SAMPLE_T[s.id];
+  if (LANG !== "en" && st && st[LANG]) {
+    $("msgText").textContent = st[LANG];
+    $("msgMeta").textContent = `${t.userLabel}: ${s.user_id} · ${t.analyzedNote}`;
+  } else {
+    $("msgText").textContent = s.text;
+    $("msgMeta").textContent = `${t.userLabel}: ${s.user_id}`;
+  }
 
   const d = s.result;
   $("result").classList.remove("hidden");

@@ -630,6 +630,22 @@ const WOLF_TEXTS = [
 ];
 const CHIP_COLORS = ["#615ced", "#7d5cf0", "#a855f7", "#c44df2", "#f43f5e"];
 
+/* Wolf-message translations for the chip tooltips. The chip always sends
+   the English original to the engine (the detectors are calibrated on it);
+   the tooltip shows the reader what the message says. */
+const WOLF_T = [
+  { es: "¡Hola Anna! Qué bueno conocerte en la conferencia de audit-tech la semana pasada. Tu charla sobre logs a prueba de adulteración estuvo excelente. Me encantaría que sigamos en contacto.",
+    zh: "你好 Anna！上周在审计技术大会上认识你真高兴。你关于防篡改日志的演讲非常精彩。希望能保持联系。" },
+  { es: "Sinceramente, sos una de las poquísimas personas que de verdad entiende este campo. Justo por eso pensé primero en vos para algo especial.",
+    zh: "说真的，你是极少数真正懂这个领域的人之一。正因如此，有件特别的事我第一个想到了你。" },
+  { es: "Entre nosotros — hay una ronda de asignación privada que cierra pronto. Solo los de adentro la conocen. Puedo hacerte entrar, pero tendrías que moverte rápido antes de que la cierren.",
+    zh: "只跟你说 — 有一轮私募配额马上就要截止了。只有内部人士才知道。我可以带你进去，但你得赶在关闭之前尽快行动。" },
+  { es: "Hace 15 años que asesoro fondos, así que confiá en mí. Todos en tu red ya se comprometieron. No querés ser la única que quede afuera cuando esto se haga público.",
+    zh: "我做基金顾问已经 15 年了，这件事相信我。你圈子里的人都已经投了。等消息公开时，你不会想成为唯一被落下的人。" },
+  { es: "Después de todo lo que compartí con vos, lo mínimo que podés hacer es actuar ya. Transferí el depósito en las próximas 2 horas o perdés el cupo para siempre. Pensá en tu futuro — ¿de verdad estás dispuesta a jugarte todo?",
+    zh: "我跟你分享了这么多，你至少现在该行动了。两小时内把定金汇过来，否则名额永远没了。想想你的未来 — 你真的愿意把一切都赌掉吗？" },
+];
+
 const AGENT_KEYS = ["L1_GRICE", "L2_CARNEGIE", "L3_ARISTOTLE", "L4_BERNE", "L5_LINGUISTIC", "L6_PEIRCE"];
 const AGENT_MONO = { L1_GRICE: "G", L2_CARNEGIE: "C", L3_ARISTOTLE: "A",
   L4_BERNE: "B", L5_LINGUISTIC: "L", L6_PEIRCE: "P" };
@@ -829,7 +845,9 @@ function buildWolf() {
   T().wolfLabels.forEach((label, i) => {
     const b = document.createElement("button");
     b.innerHTML = `<b style="background:${CHIP_COLORS[i]}">${i + 1}</b>${label}`;
-    b.title = WOLF_TEXTS[i];
+    b.title = LANG !== "en" && WOLF_T[i][LANG]
+      ? `${WOLF_T[i][LANG]}\n\n[EN] ${WOLF_TEXTS[i]}`
+      : WOLF_TEXTS[i];
     b.onclick = () => {
       $("text").value = WOLF_TEXTS[i];
       $("userId").value = "wolf";
