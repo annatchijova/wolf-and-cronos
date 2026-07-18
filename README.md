@@ -2,7 +2,7 @@
 
 **Qwen Cloud Hackathon 2026 · Track 3: Agentic AI**
 
-**Live** — ▶ [wolf-and-cronos.vercel.app](https://wolf-and-cronos.vercel.app) (full site: CRONOS showcase · the Wolf demo · live console, in EN / ES / 中文) · [Wolf & CRONOS](https://annatchijova.github.io/vigia/wolf-and-cronos.html) · [CRONOS page](https://annatchijova.github.io/vigia/cronos.html)
+**Live** — ▶ [wolf-and-cronos.vercel.app](https://wolf-and-cronos.vercel.app) (full site: CRONOS showcase · the Wolf demo · live console, in EN / ES / 中文) · [Wolf & CRONOS](https://annatchijova.github.io/vigia/wolf-and-cronos.html) · [CRONOS page](https://annatchijova.github.io/vigia/cronos.html) · [Architecture diagram](https://annatchijova.github.io/vigia/diagrama.html)
 
 ---
 
@@ -74,6 +74,14 @@ CORVUS is one detector plugged into it. CRONOS is the platform, and any reasonin
 
 ## Architecture
 
+**[▶ Interactive architecture diagram](https://annatchijova.github.io/vigia/diagrama.html)** — one pipeline, one codebase: detection → gate → seal → narration.
+
+![CORVUS × CRONOS architecture — text artifact through the six-agent CORVUS analysis layer and the corroboration gate](visual/diagrama1.png)
+
+![CORVUS × CRONOS architecture — verdict engine and CRONOS trace chain seal the verdict, then the read-only Qwen narrator explains it](visual/diagrama2.png)
+
+The same flow as text, for readers of the raw file:
+
 ```
 TEXT ARTIFACT
       │
@@ -134,6 +142,14 @@ cloud dependency); `api_server.py`, the `Dockerfile`, and the nightly
 red-team job below are the deployable product. What remains is standing it
 up on ECS the same way `rebound` and `raven-memory` already are, and
 running the first live pass against DashScope.
+
+### Component diagrams
+
+The two engines, on their own:
+
+![CORVUS analysis architecture — the six theoretical frameworks feeding the verdict engine](visual/architecture_diagram_corvus.svg)
+
+![CRONOS architecture — hash-chained hypothesis traces, quality/diversity scoring, and the tamper-evident SHA-256 chain](visual/cronos_architecture.svg)
 
 ### Why six agents instead of one?
 
