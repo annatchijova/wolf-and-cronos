@@ -32,7 +32,7 @@
     margin: 0;
     min-height: 100vh;
     color: var(--ink);
-    font: 15px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+    font: clamp(15px, 0.55vw + 11px, 19px)/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
     background:
       radial-gradient(ellipse 60rem 34rem at 12% -6%, rgba(97, 92, 237, .28), transparent),
       radial-gradient(ellipse 50rem 30rem at 100% 8%, rgba(217, 70, 239, .16), transparent),
@@ -47,22 +47,22 @@
     background-size: 26px 26px;
     mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
   }
-  main { position: relative; max-width: 1220px; margin: 0 auto; padding: 30px 22px 70px; }
+  main { position: relative; width: min(96vw, 1780px); margin: 0 auto; padding: 34px 24px 70px; }
 
   /* ── Header ──────────────────────────────────────────────────────── */
   header { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-bottom: 26px; }
   .mark {
-    width: 46px; height: 46px; border-radius: 14px; background: var(--grad);
-    display: grid; place-items: center; font-weight: 800; font-size: 17px;
+    width: 56px; height: 56px; border-radius: 16px; background: var(--grad);
+    display: grid; place-items: center; font-weight: 800; font-size: 20px;
     letter-spacing: -.02em; color: #fff;
     box-shadow: 0 6px 24px rgba(168, 85, 247, .45), inset 0 1px 0 rgba(255,255,255,.35);
   }
-  .wordmark h1 { margin: 0; font-size: 21px; letter-spacing: .05em; font-weight: 700; }
+  .wordmark h1 { margin: 0; font-size: clamp(21px, 1.4vw + 8px, 30px); letter-spacing: .05em; font-weight: 700; }
   .wordmark h1 .x {
     background: var(--grad); -webkit-background-clip: text; background-clip: text;
     color: transparent; padding: 0 2px; font-weight: 800;
   }
-  .wordmark .sub { color: var(--muted); font-size: 12.5px; letter-spacing: .04em; }
+  .wordmark .sub { color: var(--muted); font-size: clamp(12.5px, 0.5vw + 9px, 16px); letter-spacing: .04em; }
   .pills { margin-left: auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .pill {
     font-size: 11.5px; letter-spacing: .08em; padding: 6px 14px; border-radius: 999px;
@@ -79,7 +79,7 @@
   #conn.bad { color: var(--critical); border-color: rgba(244, 63, 94, .45); }
 
   /* ── Layout ──────────────────────────────────────────────────────── */
-  .grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 20px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 24px; }
   @media (max-width: 940px) { .grid { grid-template-columns: 1fr; } }
 
   .panel {
@@ -87,7 +87,7 @@
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: var(--radius);
-    padding: 22px 24px;
+    padding: 28px 32px;
     backdrop-filter: blur(14px);
     box-shadow: 0 18px 50px rgba(6, 2, 24, .5);
   }
@@ -97,7 +97,7 @@
     background: linear-gradient(90deg, transparent, rgba(168,85,247,.7), transparent);
   }
   .panel h2 {
-    margin: 0 0 14px; font-size: 11.5px; letter-spacing: .22em;
+    margin: 0 0 16px; font-size: clamp(11.5px, 0.4vw + 9px, 14px); letter-spacing: .22em;
     text-transform: uppercase; color: var(--muted); font-weight: 700;
   }
   .panel h2 small { color: var(--muted); font-weight: 400; letter-spacing: .05em; text-transform: none; }
@@ -112,7 +112,7 @@
     font: inherit;
     transition: border-color .18s, box-shadow .18s;
   }
-  textarea { width: 100%; min-height: 118px; resize: vertical; line-height: 1.55; }
+  textarea { width: 100%; min-height: clamp(118px, 16vh, 190px); resize: vertical; line-height: 1.55; }
   textarea:focus, input:focus, select:focus {
     outline: none; border-color: var(--violet);
     box-shadow: 0 0 0 3px rgba(168, 85, 247, .18);
@@ -147,7 +147,7 @@
     text-transform: uppercase; color: var(--muted); }
   .wolfchips { display: flex; flex-wrap: wrap; gap: 8px; }
   .wolfchips button {
-    font-size: 12px; padding: 6px 13px; font-weight: 500;
+    font-size: clamp(12px, 0.4vw + 9px, 15px); padding: 7px 15px; font-weight: 500;
     background: rgba(97, 92, 237, .08); color: var(--lavender);
     border: 1px solid var(--line); box-shadow: none;
   }
@@ -161,8 +161,9 @@
   /* ── Verdict ─────────────────────────────────────────────────────── */
   .verdictrow { display: flex; align-items: center; gap: 16px; margin-top: 22px; flex-wrap: wrap; }
   .vbadge {
-    padding: 8px 24px; border-radius: 999px; font-weight: 800;
-    letter-spacing: .16em; font-size: 15px; border: 1px solid transparent;
+    padding: 10px 30px; border-radius: 999px; font-weight: 800;
+    letter-spacing: .16em; font-size: clamp(15px, 0.7vw + 10px, 20px);
+    border: 1px solid transparent;
   }
   .vbadge[data-l="SILENT"] {
     color: var(--lavender); border-color: var(--line);
@@ -189,12 +190,12 @@
   }
   .scoretag { font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
     font-size: 13px; color: var(--lavender); }
-  .scoretag b { color: var(--ink); font-size: 16px; }
+  .scoretag b { color: var(--ink); font-size: clamp(16px, 1vw + 8px, 24px); }
 
   /* score bar with real verdict thresholds */
   .scorewrap { position: relative; margin-top: 14px; }
   .scorebar {
-    height: 12px; border-radius: 999px; overflow: hidden;
+    height: 16px; border-radius: 999px; overflow: hidden;
     background: rgba(10, 6, 26, .85); border: 1px solid var(--line);
   }
   .scorebar i {
@@ -221,13 +222,15 @@
     background: rgba(10, 6, 26, .5); transition: all .25s;
   }
   .agent .mono-badge {
-    width: 30px; height: 30px; border-radius: 10px; flex: none;
-    display: grid; place-items: center; font-weight: 800; font-size: 13px;
+    width: 38px; height: 38px; border-radius: 12px; flex: none;
+    display: grid; place-items: center; font-weight: 800;
+    font-size: clamp(13px, 0.5vw + 10px, 17px);
     background: rgba(97, 92, 237, .15); color: var(--muted);
     border: 1px solid var(--line);
   }
-  .agent .txt b { display: block; font-size: 12px; letter-spacing: .06em; color: var(--muted); }
-  .agent .txt span { font-size: 10.5px; color: #6e69a0; }
+  .agent .txt b { display: block; font-size: clamp(12px, 0.4vw + 9px, 15px);
+    letter-spacing: .06em; color: var(--muted); }
+  .agent .txt span { font-size: clamp(10.5px, 0.35vw + 8px, 13px); color: #6e69a0; }
   .agent.fired { border-color: rgba(217, 70, 239, .5); background: rgba(168, 85, 247, .1);
     box-shadow: 0 0 18px rgba(168, 85, 247, .15); }
   .agent.fired .mono-badge { background: var(--grad); color: #fff; border-color: transparent; }
@@ -235,9 +238,9 @@
   .agent.fired .txt span { color: var(--lavender); }
 
   /* ── Text blocks ─────────────────────────────────────────────────── */
-  .block { margin-top: 18px; font-size: 13.5px; }
+  .block { margin-top: 20px; font-size: clamp(13.5px, 0.45vw + 10px, 16.5px); }
   .block h3 {
-    margin: 0 0 5px; font-size: 10.5px; letter-spacing: .18em;
+    margin: 0 0 6px; font-size: clamp(10.5px, 0.35vw + 8px, 13px); letter-spacing: .18em;
     text-transform: uppercase; color: var(--muted); font-weight: 700;
   }
   .block p { margin: 0; color: var(--ink); white-space: pre-wrap; }
@@ -267,15 +270,18 @@
     flex: none; border: 1px solid var(--line); border-radius: 10px;
     padding: 7px 10px; background: rgba(10, 6, 26, .6); text-align: center;
   }
-  .blk .h { font-family: ui-monospace, Consolas, monospace; font-size: 10px; color: var(--lavender); }
-  .blk .a { font-size: 9px; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
+  .blk .h { font-family: ui-monospace, Consolas, monospace;
+    font-size: clamp(10px, 0.35vw + 8px, 13px); color: var(--lavender); }
+  .blk .a { font-size: clamp(9px, 0.3vw + 7px, 11px); letter-spacing: .1em;
+    color: var(--muted); text-transform: uppercase; }
   .blk-link { flex: none; width: 18px; height: 1.5px;
     background: linear-gradient(90deg, var(--indigo), var(--fuchsia)); }
 
   .traces { margin-top: 4px; }
   .tr-row {
-    display: flex; align-items: center; gap: 10px; padding: 9px 4px;
-    border-bottom: 1px solid rgba(167, 139, 250, .12); font-size: 12.5px;
+    display: flex; align-items: center; gap: 10px; padding: 10px 4px;
+    border-bottom: 1px solid rgba(167, 139, 250, .12);
+    font-size: clamp(12.5px, 0.4vw + 9px, 15px);
   }
   .tr-row:last-child { border-bottom: none; }
   .tr-agent { flex: none; width: 96px; color: var(--lavender); font-weight: 600;
