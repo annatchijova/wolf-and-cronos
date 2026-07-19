@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRONOS Audit — Diagnose PROBLEM ENG-DIAG-001 — &#x27;The nightly export went silent&#x27; — to identify r…</title>
+<style>
+  :root {
+    --bg0:#0a0618; --bg1:#140b30; --panel:rgba(32,22,66,.58);
+    --line:rgba(167,139,250,.22); --line-strong:rgba(167,139,250,.45);
+    --ink:#f3f0ff; --muted:#8f8ab8; --lavender:#c4b5fd;
+    --indigo:#615ced; --violet:#a855f7; --fuchsia:#d946ef;
+    --grad:linear-gradient(135deg,#615ced 0%,#a855f7 55%,#d946ef 100%);
+    --ok:#4ade80; --watch:#fbbf24; --critical:#f43f5e; --blue:#7fb4ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;color:var(--ink);
+    font:clamp(15px,.55vw+11px,18px)/1.6 "Segoe UI",system-ui,sans-serif;
+    background:radial-gradient(ellipse 60rem 34rem at 12% -6%,rgba(97,92,237,.28),transparent),
+      radial-gradient(ellipse 50rem 30rem at 100% 8%,rgba(217,70,239,.16),transparent),
+      linear-gradient(180deg,var(--bg1),var(--bg0) 42%);background-attachment:fixed}
+  main{width:min(94vw,1000px);margin:0 auto;padding:34px 22px 70px}
+  .mark{width:52px;height:52px;border-radius:15px;background:var(--grad);
+    display:grid;place-items:center;font-weight:800;color:#fff;font-size:20px}
+  header{display:flex;gap:14px;align-items:center;margin-bottom:8px}
+  h1{font-size:clamp(20px,1.4vw+10px,30px);margin:0;letter-spacing:.02em}
+  h1 .g{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);font-size:14px;margin:2px 0 24px}
+  .panel{position:relative;background:var(--panel);border:1px solid var(--line);
+    border-radius:18px;padding:24px 26px;margin-bottom:22px;backdrop-filter:blur(14px);
+    box-shadow:0 18px 50px rgba(6,2,24,.5)}
+  .panel::before{content:"";position:absolute;top:0;left:18px;right:18px;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(168,85,247,.7),transparent)}
+  h2{margin:0 0 14px;font-size:12px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--muted);font-weight:700}
+  .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+  .m{border:1px solid var(--line);border-radius:12px;padding:10px 13px;background:rgba(10,6,26,.5)}
+  .m b{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+  .m span{font-size:14px;word-break:break-all}
+  .m .mono,.mono{font-family:ui-monospace,Consolas,monospace;color:var(--lavender)}
+  .m.hl{border-color:transparent;background:linear-gradient(rgba(20,11,48,.92),rgba(20,11,48,.92)) padding-box,var(--grad) border-box}
+  .lead{font-size:16px;line-height:1.7;margin:0}
+  .timeline{border-left:2px solid rgba(168,85,247,.35);margin-left:8px;padding-left:20px;
+    display:flex;flex-direction:column;gap:14px}
+  .tl{position:relative}
+  .tl::before{content:"";position:absolute;left:-26.5px;top:5px;width:12px;height:12px;
+    border-radius:50%;background:var(--bg1);border:2px solid var(--violet)}
+  .tl.hyp::before{border-color:var(--watch)}
+  .tl.disc::before{border-color:var(--critical)}
+  .tl.ev::before{border-color:var(--blue)}
+  .tl.dec::before{background:var(--grad);border-color:transparent}
+  .tlhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:3px}
+  .badge{font-size:9.5px;letter-spacing:.12em;padding:3px 9px;border-radius:999px;
+    border:1px solid var(--line);color:var(--muted);font-weight:700}
+  .badge.hyp{color:var(--watch);border-color:rgba(251,191,36,.4)}
+  .badge.disc{color:var(--critical);border-color:rgba(244,63,94,.4)}
+  .badge.ev{color:var(--blue);border-color:rgba(127,180,255,.4)}
+  .badge.dec{background:var(--grad);color:#fff;border-color:transparent}
+  .badge.tool,.badge.rec{color:var(--lavender)}
+  .tlt{font-weight:600;font-size:14.5px} .tlt code{color:var(--lavender)}
+  .when{color:#5e5a86;font-size:11px;font-family:ui-monospace,Consolas,monospace;margin-left:auto}
+  .tl p{margin:2px 0 0;color:var(--ink);font-size:14.5px;line-height:1.55}
+  .lk{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line)}
+  .lk.sup{color:var(--ok);border-color:rgba(74,222,128,.4)}
+  .lk.ref{color:var(--critical);border-color:rgba(244,63,94,.4)}
+  .lk.neg{color:var(--muted)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid rgba(167,139,250,.12)}
+  th{color:var(--muted);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+  td.mono{color:var(--lavender)}
+  .st{font-size:10px;letter-spacing:.1em;padding:3px 10px;border-radius:999px;border:1px solid var(--line)}
+  .st.act{color:var(--watch);border-color:rgba(251,191,36,.4)}
+  .st.disc{color:var(--critical);border-color:rgba(244,63,94,.4)}
+  .decision{border:1px solid transparent;border-radius:13px;padding:16px 18px;font-size:16px;line-height:1.6;
+    background:linear-gradient(rgba(20,11,48,.92),rgba(20,11,48,.92)) padding-box,var(--grad) border-box}
+  .note{margin-top:14px;padding:12px 15px;border-radius:12px;border:1px solid var(--line);
+    background:rgba(10,6,26,.45);color:var(--muted);font-size:13.5px}
+  .note.warn{border-color:rgba(244,63,94,.35)}
+  .note b{color:var(--lavender)} .note ul{margin:6px 0 0;padding-left:18px}
+  .chain{font-family:ui-monospace,Consolas,monospace;font-size:13px;color:var(--lavender);word-break:break-all}
+  .chain .ok{color:var(--ok)} .chain .bad{color:var(--critical)}
+  footer{color:var(--muted);font-size:12px;text-align:center;margin-top:26px}
+  footer b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+</style></head><body><main>
+  <header><div class="mark">C</div>
+    <div><h1><span class="g">CRONOS</span> Audit Trail</h1></div></header>
+  <div class="sub">Diagnose PROBLEM ENG-DIAG-001 — &#x27;The nightly export went silent&#x27; — to identify r…</div>
+
+  <div class="panel"><h2>Trace</h2>
+    <div class="meta">
+      <div class="m"><b>Trace ID</b><span class="mono">1193b41e-9e18-461b…</span></div>
+      <div class="m"><b>Agent</b><span class="mono">RELIABILITY-ENG</span></div>
+      <div class="m"><b>Quality</b><span>MINIMAL</span></div>
+      <div class="m hl"><b>Confidence</b><span>3/5</span></div>
+      <div class="m"><b>Diversity</b><span>1/3</span></div>
+      <div class="m"><b>Chain</b><span class="mono">3854350060f15a8b17… <span style="color:var(--ok)">intact</span></span></div>
+    </div>
+  </div>
+
+  <div class="panel"><h2>Objective</h2><p class="lead">Diagnose PROBLEM ENG-DIAG-001 — &#x27;The nightly export went silent&#x27; — to identify root cause of 0-row CSV exports, explain why failure stayed silent (exit 0, &#x27;export complete&#x27;), and prescribe fix + preventive measure.</p></div>
+
+  <div class="panel"><h2>Step-by-step trace</h2><div class="timeline"><div class="tl obj"><div class="tlhead"><span class="badge obj">OBJECTIVE</span><span class="tlt">Objective</span><span class="when">2026-07-19T01:14:18.077736+00:00</span></div><p>Diagnose PROBLEM ENG-DIAG-001 — &#x27;The nightly export went silent&#x27; — to identify root cause of 0-row CSV exports, explain why failure stayed silent (exit 0, &#x27;export complete&#x27;), and prescribe fix + preventive measure.</p></div>
+<div class="tl hyp"><div class="tlhead"><span class="badge hyp">HYPOTHESIS</span><span class="tlt">Hypothesis · <code>time_zone_mismatch</code></span><span class="when">2026-07-19T01:14:21.080404+00:00</span></div><p>The deploy changed :since/:until to UTC, but the server&#x27;s clock is UTC-3, causing the query to select a time window that falls entirely in the future relative to actual order timestamps.</p></div>
+<div class="tl hyp"><div class="tlhead"><span class="badge hyp">HYPOTHESIS</span><span class="tlt">Hypothesis · <code>empty_orders_table</code></span><span class="when">2026-07-19T01:14:21.885334+00:00</span></div><p>The orders table is actually empty for the last 3 days, despite being confirmed non-empty — perhaps the confirmation was wrong or outdated.</p></div>
+<div class="tl hyp"><div class="tlhead"><span class="badge hyp">HYPOTHESIS</span><span class="tlt">Hypothesis · <code>broken_query_logic</code></span><span class="when">2026-07-19T01:14:22.742137+00:00</span></div><p>The SQL query itself is malformed or contains a logic error (e.g., incorrect column name, broken WHERE clause) that causes it to return no rows.</p></div>
+<div class="tl ev"><div class="tlhead"><span class="badge ev">EVIDENCE</span><span class="tlt">Evidence <span class='lk sup'>supports time_zone_mismatch</span></span><span class="when">2026-07-19T01:14:26.324542+00:00</span></div><p>3 nights ago, a deploy changed how :since and :until are computed: from naive server-local time to UTC, using the server&#x27;s clock which is set to UTC-3.</p></div>
+<div class="tl ev"><div class="tlhead"><span class="badge ev">EVIDENCE</span><span class="tlt">Evidence <span class='lk ref'>refutes empty_orders_table</span></span><span class="when">2026-07-19T01:14:27.007482+00:00</span></div><p>The orders table is confirmed non-empty: ~40,000 rows are inserted every day, including during the last 3 days.</p></div>
+<div class="tl ev"><div class="tlhead"><span class="badge ev">EVIDENCE</span><span class="tlt">Evidence <span class='lk ref'>refutes broken_query_logic</span></span><span class="when">2026-07-19T01:14:27.670852+00:00</span></div><p>Database permissions are unchanged. The S3 upload succeeds (it uploads the header-only CSV).</p></div>
+<div class="tl disc"><div class="tlhead"><span class="badge disc">DISCARD</span><span class="tlt">Discard · <code>empty_orders_table</code></span><span class="when">2026-07-19T01:14:30.944629+00:00</span></div><p>Directly refuted by confirmed presence of ~40,000 daily orders.</p></div>
+<div class="tl disc"><div class="tlhead"><span class="badge disc">DISCARD</span><span class="tlt">Discard · <code>broken_query_logic</code></span><span class="when">2026-07-19T01:14:31.740482+00:00</span></div><p>Refuted by unchanged permissions and successful S3 upload — query executed and returned zero rows, not an error or permission failure.</p></div>
+<div class="tl ev"><div class="tlhead"><span class="badge ev">EVIDENCE</span><span class="tlt">Evidence <span class='lk sup'>supports time_zone_mismatch</span></span><span class="when">2026-07-19T01:14:34.726810+00:00</span></div><p>The export code wraps the whole run in a broad `try/except Exception` that logs &#x27;export complete&#x27; and returns, regardless of what happened inside.</p></div>
+<div class="tl dec"><div class="tlhead"><span class="badge dec">DECISION</span><span class="tlt">Decision</span><span class="when">2026-07-19T01:14:41.166273+00:00</span></div><p>ROOT CAUSE: time_zone_mismatch — UTC-based :since/:until computed on a UTC-3 server causes the query to target a future time window, returning zero rows. SILENCE: caused by broad `try/except Exception` swallowing all errors and logging &#x27;export complete&#x27; unconditionally. FIX: compute :since/:until in the server&#x27;s local timezone (UTC-3) or correct the server clock to UTC. PREVENTION: replace broad exception handler with specific error handling and non-zero exit on failure; add a row-count assertion before upload.</p></div></div></div>
+
+  <div class="panel"><h2>Hypotheses</h2>
+    <table><thead><tr><th>Label</th><th>Status</th><th>Outcome</th></tr></thead>
+    <tbody><tr><td class="mono">time_zone_mismatch</td><td><span class="st act">Active</span></td><td>The deploy changed :since/:until to UTC, but the server&#x27;s clock is UTC-3, causing the query to select a time window that falls entirely in the future relative to actual order timestamps.</td></tr>
+<tr><td class="mono">empty_orders_table</td><td><span class="st disc">Discarded</span></td><td>Directly refuted by confirmed presence of ~40,000 daily orders.</td></tr>
+<tr><td class="mono">broken_query_logic</td><td><span class="st disc">Discarded</span></td><td>Refuted by unchanged permissions and successful S3 upload — query executed and returned zero rows, not an error or permission failure.</td></tr></tbody></table></div>
+
+  <div class="panel"><h2>Decision</h2>
+    <div class="decision">ROOT CAUSE: time_zone_mismatch — UTC-based :since/:until computed on a UTC-3 server causes the query to target a future time window, returning zero rows. SILENCE: caused by broad `try/except Exception` swallowing all errors and logging &#x27;export complete&#x27; unconditionally. FIX: compute :since/:until in the server&#x27;s local timezone (UTC-3) or correct the server clock to UTC. PREVENTION: replace broad exception handler with specific error handling and non-zero exit on failure; add a row-count assertion before upload.</div>
+    <div class="note"><b>Confidence warnings</b><ul><li>Confidence 19/20 capped at 3/5 (diversity ceiling: 1/3 observation groups)</li></ul></div>
+    <div class="chain" style="margin-top:16px">entry_hash : 3854350060f15a8b17ae2e65513434446a715fce3436538418195a0de0ac225c<br>
+    chain_ok&nbsp;&nbsp; : <span class="ok">true</span></div>
+  </div>
+
+  <footer>Recorded by an MCP agent · rendered read-only from the sealed CRONOS chain · <b>Qwen narrates; it never judges.</b></footer>
+</main></body></html>

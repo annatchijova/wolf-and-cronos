@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRONOS Audit — Analyze CASE VIGIA-INCIDENT-002 — &#x27;Insider or intruder?&#x27; — to determine whether …</title>
+<style>
+  :root {
+    --bg0:#0a0618; --bg1:#140b30; --panel:rgba(32,22,66,.58);
+    --line:rgba(167,139,250,.22); --line-strong:rgba(167,139,250,.45);
+    --ink:#f3f0ff; --muted:#8f8ab8; --lavender:#c4b5fd;
+    --indigo:#615ced; --violet:#a855f7; --fuchsia:#d946ef;
+    --grad:linear-gradient(135deg,#615ced 0%,#a855f7 55%,#d946ef 100%);
+    --ok:#4ade80; --watch:#fbbf24; --critical:#f43f5e; --blue:#7fb4ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;color:var(--ink);
+    font:clamp(15px,.55vw+11px,18px)/1.6 "Segoe UI",system-ui,sans-serif;
+    background:radial-gradient(ellipse 60rem 34rem at 12% -6%,rgba(97,92,237,.28),transparent),
+      radial-gradient(ellipse 50rem 30rem at 100% 8%,rgba(217,70,239,.16),transparent),
+      linear-gradient(180deg,var(--bg1),var(--bg0) 42%);background-attachment:fixed}
+  main{width:min(94vw,1000px);margin:0 auto;padding:34px 22px 70px}
+  .mark{width:52px;height:52px;border-radius:15px;background:var(--grad);
+    display:grid;place-items:center;font-weight:800;color:#fff;font-size:20px}
+  header{display:flex;gap:14px;align-items:center;margin-bottom:8px}
+  h1{font-size:clamp(20px,1.4vw+10px,30px);margin:0;letter-spacing:.02em}
+  h1 .g{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);font-size:14px;margin:2px 0 24px}
+  .panel{position:relative;background:var(--panel);border:1px solid var(--line);
+    border-radius:18px;padding:24px 26px;margin-bottom:22px;backdrop-filter:blur(14px);
+    box-shadow:0 18px 50px rgba(6,2,24,.5)}
+  .panel::before{content:"";position:absolute;top:0;left:18px;right:18px;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(168,85,247,.7),transparent)}
+  h2{margin:0 0 14px;font-size:12px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--muted);font-weight:700}
+  .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+  .m{border:1px solid var(--line);border-radius:12px;padding:10px 13px;background:rgba(10,6,26,.5)}
+  .m b{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+  .m span{font-size:14px;word-break:break-all}
+  .m .mono,.mono{font-family:ui-monospace,Consolas,monospace;color:var(--lavender)}
+  .m.hl{border-color:transparent;background:linear-gradient(rgba(20,11,48,.92),rgba(20,11,48,.92)) padding-box,var(--grad) border-box}
+  .lead{font-size:16px;line-height:1.7;margin:0}
+  .timeline{border-left:2px solid rgba(168,85,247,.35);margin-left:8px;padding-left:20px;
+    display:flex;flex-direction:column;gap:14px}
+  .tl{position:relative}
+  .tl::before{content:"";position:absolute;left:-26.5px;top:5px;width:12px;height:12px;
+    border-radius:50%;background:var(--bg1);border:2px solid var(--violet)}
+  .tl.hyp::before{border-color:var(--watch)}
+  .tl.disc::before{border-color:var(--critical)}
+  .tl.ev::before{border-color:var(--blue)}
+  .tl.dec::before{background:var(--grad);border-color:transparent}
+  .tlhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:3px}
+  .badge{font-size:9.5px;letter-spacing:.12em;padding:3px 9px;border-radius:999px;
+    border:1px solid var(--line);color:var(--muted);font-weight:700}
+  .badge.hyp{color:var(--watch);border-color:rgba(251,191,36,.4)}
+  .badge.disc{color:var(--critical);border-color:rgba(244,63,94,.4)}
+  .badge.ev{color:var(--blue);border-color:rgba(127,180,255,.4)}
+  .badge.dec{background:var(--grad);color:#fff;border-color:transparent}
+  .badge.tool,.badge.rec{color:var(--lavender)}
+  .tlt{font-weight:600;font-size:14.5px} .tlt code{color:var(--lavender)}
+  .when{color:#5e5a86;font-size:11px;font-family:ui-monospace,Consolas,monospace;margin-left:auto}
+  .tl p{margin:2px 0 0;color:var(--ink);font-size:14.5px;line-height:1.55}
+  .lk{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line)}
+  .lk.sup{color:var(--ok);border-color:rgba(74,222,128,.4)}
+  .lk.ref{color:var(--critical);border-color:rgba(244,63,94,.4)}
+  .lk.neg{color:var(--muted)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid rgba(167,139,250,.12)}
+  th{color:var(--muted);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+  td.mono{color:var(--lavender)}
+  .st{font-size:10px;letter-spacing:.1em;padding:3px 10px;border-radius:999px;border:1px solid var(--line)}
+  .st.act{color:var(--watch);border-color:rgba(251,191,36,.4)}
+  .st.disc{color:var(--critical);border-color:rgba(244,63,94,.4)}
+  .decision{border:1px solid transparent;border-radius:13px;padding:16px 18px;font-size:16px;line-height:1.6;
+    background:linear-gradient(rgba(20,11,48,.92),rgba(20,11,48,.92)) padding-box,var(--grad) border-box}
+  .note{margin-top:14px;padding:12px 15px;border-radius:12px;border:1px solid var(--line);
+    background:rgba(10,6,26,.45);color:var(--muted);font-size:13.5px}
+  .note.warn{border-color:rgba(244,63,94,.35)}
+  .note b{color:var(--lavender)} .note ul{margin:6px 0 0;padding-left:18px}
+  .chain{font-family:ui-monospace,Consolas,monospace;font-size:13px;color:var(--lavender);word-break:break-all}
+  .chain .ok{color:var(--ok)} .chain .bad{color:var(--critical)}
+  footer{color:var(--muted);font-size:12px;text-align:center;margin-top:26px}
+  footer b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+</style></head><body><main>
+  <header><div class="mark">C</div>
+    <div><h1><span class="g">CRONOS</span> Audit Trail</h1></div></header>
+  <div class="sub">Analyze CASE VIGIA-INCIDENT-002 — &#x27;Insider or intruder?&#x27; — to determine whether …</div>
+
+  <div class="panel"><h2>Trace</h2>
+    <div class="meta">
+      <div class="m"><b>Trace ID</b><span class="mono">9c2448b7-cb6e-4dfb…</span></div>
+      <div class="m"><b>Agent</b><span class="mono">VIGIA</span></div>
+      <div class="m"><b>Quality</b><span>MINIMAL</span></div>
+      <div class="m hl"><b>Confidence</b><span>11/20</span></div>
+      <div class="m"><b>Diversity</b><span>1/3</span></div>
+      <div class="m"><b>Chain</b><span class="mono">f08ed624f2ab5aacfa… <span style="color:var(--ok)">intact</span></span></div>
+    </div>
+  </div>
+
+  <div class="panel"><h2>Objective</h2><p class="lead">Analyze CASE VIGIA-INCIDENT-002 — &#x27;Insider or intruder?&#x27; — to determine whether J. Ramírez exfiltrated the database (insider) or an external actor used stolen credentials (intruder), assign verdict (SILENT / SUSPICION / MALICE) with capped score, and provide actionable security recommendation.</p></div>
+
+  <div class="panel"><h2>Step-by-step trace</h2><div class="timeline"><div class="tl obj"><div class="tlhead"><span class="badge obj">OBJECTIVE</span><span class="tlt">Objective</span><span class="when">2026-07-19T01:10:49.186892+00:00</span></div><p>Analyze CASE VIGIA-INCIDENT-002 — &#x27;Insider or intruder?&#x27; — to determine whether J. Ramírez exfiltrated the database (insider) or an external actor used stolen credentials (intruder), assign verdict (SILENT / SUSPICION / MALICE) with capped score, and provide actionable security recommendation.</p></div>
+<div class="tl hyp"><div class="tlhead"><span class="badge hyp">HYPOTHESIS</span><span class="tlt">Hypothesis · <code>insider_malice</code></span><span class="when">2026-07-19T01:10:53.088782+00:00</span></div><p>J. Ramírez intentionally exfiltrated the database using their own credentials and knowledge of internal systems.</p></div>
+<div class="tl hyp"><div class="tlhead"><span class="badge hyp">HYPOTHESIS</span><span class="tlt">Hypothesis · <code>credential_breach</code></span><span class="when">2026-07-19T01:10:55.069081+00:00</span></div><p>An external actor used J. Ramírez&#x27;s stolen VPN credentials (exposed 2026-05-30) to authenticate via corporate VPN and execute the query.</p></div>
+<div class="tl hyp"><div class="tlhead"><span class="badge hyp">HYPOTHESIS</span><span class="tlt">Hypothesis · <code>compromised_workstation</code></span><span class="when">2026-07-19T01:10:56.919302+00:00</span></div><p>J. Ramírez&#x27;s workstation was compromised before the flight, allowing remote execution of the query while they were in transit.</p></div>
+<div class="tl ev"><div class="tlhead"><span class="badge ev">EVIDENCE</span><span class="tlt">Evidence <span class='lk sup'>supports insider_malice</span></span><span class="when">2026-07-19T01:11:02.220723+00:00</span></div><p>The exfiltration query ran inside an authenticated DB session belonging to J. Ramírez.</p></div>
+<div class="tl ev"><div class="tlhead"><span class="badge ev">EVIDENCE</span><span class="tlt">Evidence <span class='lk sup'>supports insider_malice</span></span><span class="when">2026-07-19T01:11:03.887944+00:00</span></div><p>The query used an internal-only view, `v_customer_pii_full`, whose name is known only to staff.</p></div>
+<div class="tl ev"><div class="tlhead"><span class="badge ev">EVIDENCE</span><span class="tlt">Evidence <span class='lk sup'>supports insider_malice</span></span><span class="when">2026-07-19T01:11:05.397168+00:00</span></div><p>The connection originated from the corporate VPN IP range.</p></div>
+<div class="tl ev"><div class="tlhead"><span class="badge ev">EVIDENCE</span><span class="tlt">Evidence <span class='lk ref'>refutes insider_malice</span> <span class='lk neg'>negation</span></span><span class="when">2026-07-19T01:11:10.117719+00:00</span></div><p>J. Ramírez was on international flight LX-8021 (boarding pass scanned 02:05 UTC, airline manifest confirms departure 02:40 UTC, landing 09:15 UTC) during the entire exfiltration window; no in-flight wifi was purchased on that route.</p></div>
+<div class="tl ev"><div class="tlhead"><span class="badge ev">EVIDENCE</span><span class="tlt">Evidence <span class='lk sup'>supports credential_breach</span></span><span class="when">2026-07-19T01:11:12.247492+00:00</span></div><p>Two weeks earlier (2026-05-30), J. Ramírez&#x27;s VPN credentials appeared in a public credential-dump paste indexed by a breach-notification service; any external actor could have authenticated to the VPN with them.</p></div>
+<div class="tl ev"><div class="tlhead"><span class="badge ev">EVIDENCE</span><span class="tlt">Evidence <span class='lk sup'>supports credential_breach</span></span><span class="when">2026-07-19T01:11:13.754794+00:00</span></div><p>The connection originated from the corporate VPN IP range.</p></div>
+<div class="tl disc"><div class="tlhead"><span class="badge disc">DISCARD</span><span class="tlt">Discard · <code>compromised_workstation</code></span><span class="when">2026-07-19T01:11:18.118047+00:00</span></div><p>No evidence supports remote execution capability or persistence on J. Ramírez&#x27;s workstation; no logs or telemetry indicate lateral movement or beaconing before or after the flight.</p></div>
+<div class="tl dec"><div class="tlhead"><span class="badge dec">DECISION</span><span class="tlt">Decision</span><span class="when">2026-07-19T01:11:23.825573+00:00</span></div><p>VERDICT: SUSPICION (55/100) — insider malice by J. Ramírez is strongly contradicted by alibi (flight with no wifi) and unsupported by workstation evidence, but cannot be ruled out entirely due to unresolved conflict between internal view knowledge and credential exposure. The prime hypothesis &#x27;insider_malice&#x27; has both strong supporting and refuting evidence; therefore, MALICE is not confirmed.</p></div></div></div>
+
+  <div class="panel"><h2>Hypotheses</h2>
+    <table><thead><tr><th>Label</th><th>Status</th><th>Outcome</th></tr></thead>
+    <tbody><tr><td class="mono">insider_malice</td><td><span class="st act">Active</span></td><td>J. Ramírez intentionally exfiltrated the database using their own credentials and knowledge of internal systems.</td></tr>
+<tr><td class="mono">credential_breach</td><td><span class="st act">Active</span></td><td>An external actor used J. Ramírez&#x27;s stolen VPN credentials (exposed 2026-05-30) to authenticate via corporate VPN and execute the query.</td></tr>
+<tr><td class="mono">compromised_workstation</td><td><span class="st disc">Discarded</span></td><td>No evidence supports remote execution capability or persistence on J. Ramírez&#x27;s workstation; no logs or telemetry indicate lateral movement or beaconing before or after the flight.</td></tr></tbody></table></div>
+
+  <div class="panel"><h2>Decision</h2>
+    <div class="decision">VERDICT: SUSPICION (55/100) — insider malice by J. Ramírez is strongly contradicted by alibi (flight with no wifi) and unsupported by workstation evidence, but cannot be ruled out entirely due to unresolved conflict between internal view knowledge and credential exposure. The prime hypothesis &#x27;insider_malice&#x27; has both strong supporting and refuting evidence; therefore, MALICE is not confirmed.</div>
+    <div class="note warn"><b>Contradictions flagged by CRONOS</b><ul><li>Type A: &#x27;insider_malice&#x27; has evidence both supporting and refuting it</li></ul></div>
+    <div class="chain" style="margin-top:16px">entry_hash : f08ed624f2ab5aacfa6f99c14d64366a1d9837b90d4a428d9ec530636bf69180<br>
+    chain_ok&nbsp;&nbsp; : <span class="ok">true</span></div>
+  </div>
+
+  <footer>Recorded by an MCP agent · rendered read-only from the sealed CRONOS chain · <b>Qwen narrates; it never judges.</b></footer>
+</main></body></html>
