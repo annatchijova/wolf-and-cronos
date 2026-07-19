@@ -7,6 +7,8 @@ orchestrator), followed by source-level review of every emitted category.
 observations across two independently sealed shards; observations were treated
 as leads, not as defects, until re-verified against the live source.
 
+**Rendered evidence:** [standard FORGE report](https://annatchijova.github.io/vigia/forge-report.html) · [extended FORGE report](https://annatchijova.github.io/vigia/forge-extended.html)
+
 ## Outcome
 
 The audit did not identify a confirmed remote exploit in the exercised paths.

@@ -294,6 +294,8 @@ Two rounds of adversarial audit against this bridge specifically (`docs/RED_TEAM
 
 The subsequent [FORGE audit follow-up](docs/FORGE_AUDIT_FOLLOWUP_2026-07-19.md) records both verified expected false positives and the integrity anomalies they helped uncover — five confirmed defects total, all corrected and verified.
 
+Rendered audit evidence: [standard report](https://annatchijova.github.io/vigia/forge-report.html) · [extended report](https://annatchijova.github.io/vigia/forge-extended.html)
+
 | # | Finding | Fix |
 |---|---|---|
 | RT-01 | A detector crash was indistinguishable from a genuine `SILENT` | Crashes are caught and reported via `crashed_agents`, separate from real silence |
