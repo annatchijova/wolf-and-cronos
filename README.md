@@ -233,6 +233,10 @@ In all three, the same discipline: rival hypotheses recorded, dead ones discarde
 
 ![opencode running Qwen Plus against the CRONOS MCP server — the forensic prompt and the live cronos_* tool calls](visual/cronos/opencode-2026-07-18-21-48-13.png)
 
+![Qwen Plus completing the forensic investigation through CRONOS MCP — competing hypotheses, evidence, discards, diversity-capped SUSPICION verdict, and an actionable recommendation](visual/cronos/opencode-2026-07-18-21-48-16.png)
+
+![Qwen Plus requesting the sealed CRONOS trace — the rendered step-by-step record shows hypotheses, supporting and refuting evidence, discards, quality, confidence cap, and chain integrity](visual/cronos/opencode-2026-07-18-21-55-27.png)
+
 ![the audit trail Qwen wrote for the run — hypotheses, discards, the SUSPICION verdict, diversity-capped confidence, and chain_ok true](visual/cronos/opencode-2026-07-18-21-55-31.png)
 
 ---
