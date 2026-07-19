@@ -229,6 +229,12 @@ We proved it by driving CRONOS with **Qwen Plus** (not Claude) via [opencode](ht
 
 In all three, the same discipline: rival hypotheses recorded, dead ones discarded with reasons, contradictions surfaced, and confidence **capped by observational diversity** — a Qwen agent, not Claude, sealing each into the tamper-evident chain.
 
+**These weren't hand-authored.** Here is Qwen Plus driving the CRONOS MCP server live in [opencode](https://opencode.ai) — the `cronos_*` tool calls happening as it reasons (bottom bar: *Build · Qwen Plus · Qwen Cloud (DashScope)*, right panel: *cronos Connected*), and the sealed audit trail it wrote, ending in `chain_ok: true`:
+
+![opencode running Qwen Plus against the CRONOS MCP server — the forensic prompt and the live cronos_* tool calls](visual/cronos/opencode-2026-07-18-21-48-13.png)
+
+![the audit trail Qwen wrote for the run — hypotheses, discards, the SUSPICION verdict, diversity-capped confidence, and chain_ok true](visual/cronos/opencode-2026-07-18-21-55-31.png)
+
 ---
 
 ## How six agents reach one verdict
