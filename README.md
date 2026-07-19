@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="visual/logo.jpeg" alt="CORVUS × CRONOS logo" width="420"/>
+</p>
+
 # CORVUS + CRONOS
 
 > **A deterministic multi-agent platform for detecting social engineering and manipulation in natural-language conversations, with cryptographically verifiable reasoning traces.**
