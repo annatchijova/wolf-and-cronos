@@ -363,3 +363,35 @@ class TestEvidenceBundle:
         result, verdict = self._fixture()
         payload = _bundle_payload(result, verdict)
         assert not any(isinstance(v, float) for v in payload.values())
+
+    def test_verify_bundle_fails_closed_on_malformed_json(self, tmp_path):
+        # FIX: malformed JSON used to raise JSONDecodeError instead of
+        # returning False, contradicting the documented fail-closed contract.
+        from corvus.verdict.bundle import verify_bundle
+        path = tmp_path / "broken.json"
+        path.write_text("{not valid json", encoding="utf-8")
+        assert verify_bundle(str(path)) is False
+
+    def test_verify_bundle_fails_closed_on_missing_payload(self, tmp_path):
+        import json
+        from corvus.verdict.bundle import verify_bundle
+        path = tmp_path / "no_payload.json"
+        path.write_text(json.dumps({"seal": "a" * 64}), encoding="utf-8")
+        assert verify_bundle(str(path)) is False
+
+    def test_verify_bundle_fails_closed_on_non_object_payload(self, tmp_path):
+        import json
+        from corvus.verdict.bundle import verify_bundle
+        path = tmp_path / "bad_payload_type.json"
+        path.write_text(
+            json.dumps({"payload": "not-an-object", "seal": "a" * 64}),
+            encoding="utf-8",
+        )
+        assert verify_bundle(str(path)) is False
+
+    def test_verify_bundle_fails_closed_on_non_object_bundle(self, tmp_path):
+        import json
+        from corvus.verdict.bundle import verify_bundle
+        path = tmp_path / "bad_bundle_type.json"
+        path.write_text(json.dumps(["not", "an", "object"]), encoding="utf-8")
+        assert verify_bundle(str(path)) is False

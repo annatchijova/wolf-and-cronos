@@ -89,9 +89,29 @@ def seal_bundle(result: AnalysisResult, verdict: Verdict, bundle_dir: str) -> st
 def verify_bundle(path: str) -> bool:
     """
     Recompute the seal from a bundle file and compare it to the stored seal.
-    Returns True if the bundle is intact, False if it was tampered with.
+    Returns True if the bundle is intact, False if it was tampered with or
+    malformed in any way (invalid JSON, missing fields, wrong types).
     Stdlib-only, independent of the producing code.
+
+    FIX: this used to assume a well-formed bundle and let JSONDecodeError,
+    KeyError, or TypeError propagate for a malformed file — contradicting its
+    own fail-closed contract. A verifier that crashes on a malformed bundle
+    is not fail-closed; it is fail-loud-and-then-the-caller-decides, which is
+    exactly the ambiguity this function exists to remove.
     """
-    with open(path, encoding="utf-8") as fh:
-        bundle = json.load(fh)
-    return _seal_of(bundle["payload"]) == bundle.get("seal")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            bundle = json.load(fh)
+    except (OSError, json.JSONDecodeError):
+        return False
+    if not isinstance(bundle, dict):
+        return False
+    payload = bundle.get("payload")
+    if not isinstance(payload, dict):
+        return False
+    try:
+        return _seal_of(payload) == bundle.get("seal")
+    except (TypeError, ValueError):
+        # _seal_of/json.dumps can reject a payload with non-serializable
+        # values (e.g. a tampered field replaced by a non-JSON type upstream).
+        return False

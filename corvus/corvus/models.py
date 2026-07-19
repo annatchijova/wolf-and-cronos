@@ -100,6 +100,11 @@ class AnalysisResult:
     active_signals: int       # how many layers fired
     baseline_delta: Fraction  # deviation from user's own baseline
     audit_hash: str
+    # FIX: a detector that raised an exception used to be indistinguishable
+    # from one that genuinely found nothing (both surfaced as None/silent).
+    # Names of L1-L5 detectors that crashed during analyze(), so a caller can
+    # tell "nothing suspicious" apart from "we don't actually know."
+    crashed_agents: list[str] = field(default_factory=list)
 
 
 @dataclass

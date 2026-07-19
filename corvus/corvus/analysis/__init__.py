@@ -121,9 +121,18 @@ class Analyzer:
 
         tasks = [run_grice, run_influence, run_aristotle, run_berne, run_linguistics]
 
+        # FIX: a crashed detector used to be swallowed by `except Exception:
+        # pass`, so it came out identical to a detector that ran and
+        # genuinely found nothing — a crash could silently read as "clean."
+        # `future_names` maps each future back to its detector name so a
+        # crash (raised on `.result()`) can be attributed and recorded,
+        # instead of just being dropped.
+        crashed_agents: list[str] = []
+
         with ThreadPoolExecutor(max_workers=5) as executor:
-            futures = {executor.submit(task): task.__name__ for task in tasks}
-            for future in as_completed(futures):
+            future_names = {executor.submit(task): task.__name__[4:] for task in tasks}
+            for future in as_completed(future_names):
+                task_name = future_names[future]
                 try:
                     name, result = future.result()
                     if name == "grice":
@@ -137,8 +146,9 @@ class Analyzer:
                     elif name == "linguistics":
                         linguistic_result = result
                 except Exception:
-                    # Individual detector failure must not crash the pipeline
-                    pass
+                    # Individual detector failure must not crash the pipeline,
+                    # but it must be recorded — not presented as a clean result.
+                    crashed_agents.append(task_name)
 
         # -------------------------------------------------------------------
         # Count active signals
@@ -206,6 +216,7 @@ class Analyzer:
             active_signals=active_signals,
             baseline_delta=baseline_delta,
             audit_hash=audit_hash,
+            crashed_agents=crashed_agents,
         )
 
 

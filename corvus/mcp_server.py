@@ -209,6 +209,9 @@ def analyze_message(
         "baseline_delta": _jsonify(result.baseline_delta),
         "recommendation": verdict.recommendation,
         "layers": layers,
+        # FIX: a crashed detector must be visible to callers, not folded into
+        # an apparently-clean result — see corvus.analysis.Analyzer.analyze.
+        "crashed_agents": result.crashed_agents,
         "audit_hash": verdict.audit_hash,
         "persisted": persist,
         "corvus_verdict": (
@@ -216,6 +219,11 @@ def analyze_message(
             f"{result.active_signals} layer(s) fired "
             f"({', '.join(verdict.signals_fired) or 'none'}). "
             f"{verdict.rationale}"
+            + (
+                f" ⚠ {len(result.crashed_agents)} detector(s) crashed: "
+                f"{', '.join(result.crashed_agents)} — treated as silent, not clean."
+                if result.crashed_agents else ""
+            )
         ),
     }
 

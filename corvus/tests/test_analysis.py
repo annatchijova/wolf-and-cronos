@@ -399,3 +399,26 @@ class TestAnalyzer:
             user_baseline=NEW_USER_BASELINE,
         )
         assert isinstance(result.baseline_delta, Fraction)
+
+    def test_crashed_detector_is_recorded_not_silent(self, monkeypatch):
+        # FIX: a detector crash used to be swallowed by a bare `except
+        # Exception: pass`, so it was indistinguishable from a detector that
+        # ran cleanly and found nothing. Force L1 (Grice) to raise and prove
+        # the crash is tracked, not folded into an apparently-clean result.
+        def _boom(*args, **kwargs):
+            raise RuntimeError("forced detector failure")
+
+        monkeypatch.setattr(self.analyzer.grice, "analyze", _boom)
+
+        result = self.analyzer.analyze(
+            message_id="m005",
+            user_id="U005",
+            channel_id="C001",
+            text="Quick question about the deployment.",
+            timestamp="2026-06-19T10:04:00",
+            conversation_history=[],
+            user_baseline=CLEAN_BASELINE,
+        )
+        assert result.grice is None
+        assert "grice" in result.crashed_agents
+        assert len(result.crashed_agents) == 1
