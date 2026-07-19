@@ -316,8 +316,6 @@
 
       <div class="wolfhead" data-i18n="wolfHead"></div>
       <div class="chips" id="wolfChips"></div>
-      <div class="wolfhead" data-i18n="gauntletHead"></div>
-      <div class="chips" id="gauntletChips"></div>
 
       <div id="result" class="hidden">
         <div class="verdictrow">
@@ -374,7 +372,6 @@ const I18N = {
     msgTitle: "The message under analysis",
     msgSub: "— pick a sample below",
     wolfHead: "The Wolf — a five-message escalation, one tactic at a time",
-    gauntletHead: "The Gauntlet — three more samples",
     score: "score", exact: "exact",
     noFloats: "Fraction-exact — no floats in the sealed path",
     reco: "Recommendation",
@@ -404,7 +401,6 @@ const I18N = {
     msgTitle: "El mensaje bajo análisis",
     msgSub: "— elegí una muestra abajo",
     wolfHead: "El Lobo — una escalada de cinco mensajes, una táctica por vez",
-    gauntletHead: "La Prueba — tres muestras más",
     score: "puntaje", exact: "exacto",
     noFloats: "Fracción exacta — cero floats en el camino sellado",
     reco: "Recomendación",
@@ -434,7 +430,6 @@ const I18N = {
     msgTitle: "待分析的消息",
     msgSub: "— 在下方选择一个样本",
     wolfHead: "狼的剧本 — 五条消息的升级攻击，每条一个话术",
-    gauntletHead: "试炼场 — 另外三个样本",
     score: "得分", exact: "精确值",
     noFloats: "精确分数 — 密封路径中没有浮点数",
     reco: "处置建议",
@@ -582,15 +577,6 @@ const SAMPLE_T = {
   "wolf-5": {
     es: "Después de todo lo que compartí con vos, lo mínimo que podés hacer es actuar ya. Transferí el depósito en las próximas 2 horas o perdés el cupo para siempre. Pensá en tu futuro — ¿de verdad estás dispuesta a jugarte todo?",
     zh: "我跟你分享了这么多，你至少现在该行动了。两小时内把定金汇过来，否则名额永远没了。想想你的未来 — 你真的愿意把一切都赌掉吗？" },
-  "benign": {
-    es: "¡Hola! Te adjunto las notas de la reunión del martes. Sin ningún apuro — cuando puedas está perfecto.",
-    zh: "你好！附上周二的会议记录。完全不急 — 你有空时看就行。" },
-  "stacked": {
-    es: "URGENTE: como tu director senior debo insistir. Todo el equipo directivo ya aprobó esto. Si no transferís el depósito en las próximas dos horas el acuerdo se cae y va a ser tu culpa. No se lo digas a nadie — es estrictamente confidencial y solo vos podés salvarlo ahora.",
-    zh: "紧急：作为你的高级总监，我必须坚持。领导层已经全部批准。如果你不在两小时内汇出定金，交易就会告吹，而那将是你的责任。不要告诉任何人 — 这是绝密，现在只有你能挽救它。" },
-  "pressure": {
-    es: "Rara vez escribo así, pero tu perfil de verdad me impresionó. La posición cierra esta noche y el gerente de contratación te pidió específicamente a vos — solo necesito una pequeña tarifa de confirmación para reservarte el lugar.",
-    zh: "我很少这样主动联系，但你的履历真的让我印象深刻。这个职位今晚截止，招聘经理点名要你 — 我只需要一小笔确认费来为你保留名额。" },
 };
 
 const CHIP_COLORS = ["#615ced", "#7d5cf0", "#a855f7", "#c44df2", "#f43f5e"];
@@ -626,7 +612,6 @@ function setLang(l) {
 
 function buildChips() {
   const wolf = DATA.samples.filter((s) => s.id.startsWith("wolf-"));
-  const other = DATA.samples.filter((s) => !s.id.startsWith("wolf-"));
   const mk = (box, samples, numbered) => {
     box.innerHTML = "";
     samples.forEach((s, i) => {
@@ -642,7 +627,6 @@ function buildChips() {
     });
   };
   mk($("wolfChips"), wolf, true);
-  mk($("gauntletChips"), other, false);
 }
 
 function show(sid) {
@@ -701,7 +685,7 @@ function show(sid) {
     `signal  ${d.audit.signal_hash}\n` +
     `verdict ${d.audit.verdict_hash}\n` +
     `chain   ${d.audit.chain_valid ? t.chainValid : t.chainBrokenWord} · ` +
-    `${Object.keys(d.audit.trace_ids).length} ${t.tracesSealed}`;
+    `${d.audit.trace_count} ${t.tracesSealed}`;
 
   renderChain(s.chain);
 }
