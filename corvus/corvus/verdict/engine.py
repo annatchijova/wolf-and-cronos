@@ -12,10 +12,14 @@ Scoring architecture:
 """
 
 import hashlib
+import logging
 from fractions import Fraction
 from typing import Optional
 
 from corvus.models import AnalysisResult, Verdict, VerdictLevel
+from corvus.verdict.bundle import seal_bundle
+
+log = logging.getLogger("corvus.verdict.engine")
 
 
 # Layer weights — sum to 1.15, intentionally > 1.0.
@@ -50,6 +54,7 @@ class VerdictEngine:
         self.watch_threshold = config.WATCH_THRESHOLD
         self.alert_threshold = config.ALERT_THRESHOLD
         self.critical_threshold = config.CRITICAL_THRESHOLD
+        self.bundle_dir = config.CORVUS_BUNDLE_DIR
 
     def compute(self, result: AnalysisResult) -> Verdict:
         """
@@ -143,7 +148,7 @@ class VerdictEngine:
         audit_payload = f"{score_str}|{level.value}|{result.audit_hash}"
         audit_hash = hashlib.sha256(audit_payload.encode("utf-8")).hexdigest()
 
-        return Verdict(
+        verdict = Verdict(
             level=level,
             score=score,
             rationale=rationale,
@@ -151,6 +156,45 @@ class VerdictEngine:
             recommendation=recommendation,
             audit_hash=audit_hash,
         )
+
+        # -------------------------------------------------------------------
+        # Step 8: seal the evidence bundle a CRITICAL verdict claims exists
+        # -------------------------------------------------------------------
+        # FIX: the recommendation text above has always said "evidence bundle
+        # sealed," and Verdict.bundle_path exists to record where — but
+        # nothing ever called corvus.verdict.bundle.seal_bundle in production.
+        # bundle_path stayed None forever; the claim was never true. This is
+        # the single place every CRITICAL verdict passes through, regardless
+        # of caller (legacy Analyzer/mcp_server.py or corvus_cronos.bridge),
+        # so sealing here makes the claim true everywhere at once.
+        if level == VerdictLevel.CRITICAL:
+            self._seal_critical_bundle(result, verdict)
+
+        return verdict
+
+    def _seal_critical_bundle(self, result: AnalysisResult, verdict: Verdict) -> None:
+        """
+        Write the sealed evidence bundle a CRITICAL verdict's recommendation
+        text claims exists, and record its path on the verdict.
+
+        A sealing failure must not crash analysis — the verdict itself is
+        still valid and must still reach the security team — but it must
+        not be silently presented as success either. On failure the
+        recommendation is amended to retract the claim, loudly, rather than
+        leaving bundle_path=None with no visible explanation.
+        """
+        try:
+            verdict.bundle_path = seal_bundle(result, verdict, self.bundle_dir)
+        except OSError as exc:
+            log.error(
+                "CRITICAL verdict for message_id=%s: evidence bundle sealing "
+                "FAILED (%s: %s) — bundle_dir=%s",
+                result.message_id, type(exc).__name__, exc, self.bundle_dir,
+            )
+            verdict.recommendation += (
+                " ⚠ EVIDENCE BUNDLE SEALING FAILED — the claim above is not "
+                "fulfilled; investigate immediately."
+            )
 
     # ------------------------------------------------------------------
     # Private helpers

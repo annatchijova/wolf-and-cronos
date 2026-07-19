@@ -165,6 +165,47 @@ class TestAuditChain:
         entries = chain.export()
         assert len(entries[0]["entry_hash"]) == 64
 
+    def test_new_entries_are_versioned(self, memory):
+        # FIX: entries used to have no version field at all, unlike the
+        # CRONOS chain this was adapted from.
+        chain = memory.get_audit_chain()
+        chain.append("store", "U001", "C001", "test")
+        entries = chain.export()
+        assert entries[0]["version"] == "1"
+
+    def test_legacy_unversioned_entry_still_verifies(self, memory):
+        # FIX regression: a row written before versioning existed (version
+        # NULL, hash computed without a "version" key) must still verify
+        # against its original hash — the fix must not invalidate history.
+        from corvus.memory.audit import _compute_entry_hash
+
+        chain = memory.get_audit_chain()
+        timestamp = "2026-01-01T00:00:00+00:00"
+        legacy_hash = _compute_entry_hash(
+            timestamp, "store", "U_legacy", "C001", "pre-versioning entry",
+            chain._GENESIS_HASH,
+        )  # no version argument — reproduces the pre-fix unversioned hash
+        chain._conn.execute(
+            """
+            INSERT INTO audit_chain
+                (timestamp, operation, user_id, channel_id, payload_summary,
+                 prev_hash, entry_hash, version)
+            VALUES (?, ?, ?, ?, ?, ?, ?, NULL)
+            """,
+            (timestamp, "store", "U_legacy", "C001", "pre-versioning entry",
+             chain._GENESIS_HASH, legacy_hash),
+        )
+        chain._conn.commit()
+
+        ok, errors = chain.verify()
+        assert ok, errors
+
+        # A new entry appended after the legacy one must chain correctly and
+        # be versioned, proving old and new entries coexist in one chain.
+        chain.append("store", "U_new", "C001", "post-versioning entry")
+        ok, errors = chain.verify()
+        assert ok, errors
+
 
 class TestSleepConsolidator:
     def test_consolidate_empty_db(self, memory):

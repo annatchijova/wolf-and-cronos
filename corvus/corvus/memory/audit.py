@@ -11,6 +11,17 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
+# Version of the canonical hash encoding below. Stamped into new entries so a
+# future change to the encoding is itself tamper-evident and cannot silently
+# produce two different hashes for the same logical entry.
+#
+# FIX: this chain previously had no version field at all — unlike the CRONOS
+# chain it was adapted from (cronos.chain.CANONICALIZE_VERSION). Legacy rows
+# sealed before this field existed have no stored version; _compute_entry_hash
+# omits the "version" key entirely for those so they still recompute to their
+# original hash (see the `version` parameter below).
+CANONICALIZE_VERSION = 1
+
 
 @dataclass
 class AuditEntry:
@@ -30,10 +41,15 @@ def _compute_entry_hash(
     channel_id: str,
     payload_summary: str,
     prev_hash: str,
+    version: str = "",
 ) -> str:
     """
     Compute SHA-256 hash for an audit entry.
     Canonical: sorted JSON of all fields except entry_hash, concatenated with prev_hash.
+
+    version is included only when non-empty, so a legacy entry (sealed before
+    versioning existed, stored version = NULL) recomputes against the same
+    unversioned canonical form it was originally sealed with.
     """
     canonical: dict[str, Any] = {
         "timestamp": timestamp,
@@ -43,6 +59,8 @@ def _compute_entry_hash(
         "payload_summary": payload_summary,
         "prev_hash": prev_hash,
     }
+    if version:
+        canonical["version"] = version
     canonical_json = json.dumps(canonical, sort_keys=True, ensure_ascii=False)
     raw = (canonical_json + prev_hash).encode("utf-8")
     return hashlib.sha256(raw).hexdigest()
@@ -78,11 +96,26 @@ class AuditChain:
                 channel_id      TEXT    NOT NULL,
                 payload_summary TEXT    NOT NULL,
                 prev_hash       TEXT    NOT NULL,
-                entry_hash      TEXT    NOT NULL UNIQUE
+                entry_hash      TEXT    NOT NULL UNIQUE,
+                version         TEXT
             )
             """
         )
         self._conn.commit()
+        self._migrate_add_version()
+
+    def _migrate_add_version(self) -> None:
+        """
+        One-time migration: add the version column to chains created before
+        canonicalization versioning existed. Legacy rows keep version = NULL
+        and continue to verify against their original (unversioned) hash.
+        """
+        cols = {row[1] for row in self._conn.execute(
+            "PRAGMA table_info(audit_chain)"
+        ).fetchall()}
+        if "version" not in cols:
+            self._conn.execute("ALTER TABLE audit_chain ADD COLUMN version TEXT")
+            self._conn.commit()
 
     def _get_last_hash(self) -> str:
         """Return the hash of the most recent audit entry, or genesis hash."""
@@ -118,16 +151,17 @@ class AuditChain:
         """
         timestamp = datetime.now(tz=timezone.utc).isoformat()
         prev_hash = self._get_last_hash()
+        version = str(CANONICALIZE_VERSION)
         entry_hash = _compute_entry_hash(
-            timestamp, operation, user_id, channel_id, payload_summary, prev_hash
+            timestamp, operation, user_id, channel_id, payload_summary, prev_hash, version
         )
         self._conn.execute(
             """
             INSERT INTO audit_chain
-                (timestamp, operation, user_id, channel_id, payload_summary, prev_hash, entry_hash)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+                (timestamp, operation, user_id, channel_id, payload_summary, prev_hash, entry_hash, version)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (timestamp, operation, user_id, channel_id, payload_summary, prev_hash, entry_hash),
+            (timestamp, operation, user_id, channel_id, payload_summary, prev_hash, entry_hash, version),
         )
         # NOTE: intentionally no self._conn.commit() here.
         # Callers (engine.py store_message, consolidator.py) own the transaction
@@ -152,7 +186,7 @@ class AuditChain:
         cursor = self._conn.execute(
             """
             SELECT id, timestamp, operation, user_id, channel_id,
-                   payload_summary, prev_hash, entry_hash
+                   payload_summary, prev_hash, entry_hash, version
             FROM audit_chain
             ORDER BY id ASC
             """
@@ -164,7 +198,7 @@ class AuditChain:
         for row in rows:
             (
                 entry_id, timestamp, operation, user_id, channel_id,
-                payload_summary, prev_hash, stored_hash,
+                payload_summary, prev_hash, stored_hash, stored_version,
             ) = row
 
             # Check prev_hash linkage
@@ -174,9 +208,12 @@ class AuditChain:
                     f"(expected {expected_prev[:16]}…, got {prev_hash[:16]}…)"
                 )
 
-            # Recompute entry hash
+            # Recompute entry hash — stored_version is NULL for legacy entries
+            # sealed before versioning existed, which recomputes them against
+            # their original unversioned canonical form (see _compute_entry_hash).
             computed_hash = _compute_entry_hash(
-                timestamp, operation, user_id, channel_id, payload_summary, prev_hash
+                timestamp, operation, user_id, channel_id, payload_summary,
+                prev_hash, stored_version or "",
             )
             if computed_hash != stored_hash:
                 errors.append(
@@ -202,7 +239,7 @@ class AuditChain:
         cursor = self._conn.execute(
             """
             SELECT id, timestamp, operation, user_id, channel_id,
-                   payload_summary, prev_hash, entry_hash
+                   payload_summary, prev_hash, entry_hash, version
             FROM audit_chain
             ORDER BY id ASC
             """
@@ -218,6 +255,7 @@ class AuditChain:
                 "payload_summary": row[5],
                 "prev_hash": row[6],
                 "entry_hash": row[7],
+                "version": row[8],
             }
             for row in rows
         ]

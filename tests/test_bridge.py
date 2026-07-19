@@ -115,6 +115,15 @@ class TestBridgeSmoke(unittest.TestCase):
         r2 = self._bridge.analyze(DECEPTIVE_TEXT, artifact_id="T-007b")
         self.assertEqual(r1.audit_hash, r2.audit_hash)
 
+    def test_audit_hash_shares_the_analyzer_canonicalize_version(self):
+        # FIX: this hash used to have no version field at all. It now stamps
+        # the same corvus.analysis.CANONICALIZE_VERSION the legacy Analyzer
+        # path stamps into its own equivalent hash, rather than a silently
+        # divergent copy of the constant.
+        from corvus.analysis import CANONICALIZE_VERSION as analyzer_version
+        from corvus_cronos.bridge import CANONICALIZE_VERSION as bridge_version
+        self.assertEqual(bridge_version, analyzer_version)
+
     # ------------------------------------------------------------------
     # 4. Score is Fraction in [0, 1]
     # ------------------------------------------------------------------

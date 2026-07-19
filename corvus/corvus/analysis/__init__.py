@@ -26,6 +26,20 @@ from corvus.analysis.l4_berne import BerneDetector
 from corvus.analysis.l5_linguistics import LinguisticsDetector
 from corvus.analysis.l6_peirce import PeirceDetector
 
+# Version of the canonical audit-hash encoding below. Stamped into the hashed
+# payload so a future change to the signal schema is itself tamper-evident
+# instead of silently producing a different hash for what was logically the
+# same input.
+#
+# FIX: this hash previously had no version field at all, unlike
+# corvus.verdict.bundle.BUNDLE_VERSION and cronos.chain.CANONICALIZE_VERSION
+# in the same codebase. Nothing currently re-derives this hash from
+# historically stored raw signal data (it is generated and used within a
+# single run, then forwarded into VerdictEngine's own hash — see
+# verdict/engine.py), so adding the field here does not invalidate any
+# previously persisted value.
+CANONICALIZE_VERSION = 1
+
 
 def _fraction_to_str(f: Fraction) -> str:
     """Stable string representation of a Fraction for hashing."""
@@ -185,6 +199,7 @@ class Analyzer:
         # Audit hash: SHA-256 of canonical JSON of all signal outputs
         # -------------------------------------------------------------------
         canonical = {
+            "version": CANONICALIZE_VERSION,
             "message_id": message_id,
             "user_id": user_id,
             "channel_id": channel_id,
@@ -220,4 +235,4 @@ class Analyzer:
         )
 
 
-__all__ = ["Analyzer"]
+__all__ = ["Analyzer", "CANONICALIZE_VERSION"]

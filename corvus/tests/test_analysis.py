@@ -422,3 +422,51 @@ class TestAnalyzer:
         assert result.grice is None
         assert "grice" in result.crashed_agents
         assert len(result.crashed_agents) == 1
+
+    def test_audit_hash_is_versioned(self):
+        # FIX: the canonical payload behind audit_hash had no version field
+        # at all, unlike corvus.verdict.bundle.BUNDLE_VERSION and
+        # cronos.chain.CANONICALIZE_VERSION elsewhere in this codebase.
+        # Reproduce the canonical hash by hand (with and without the version
+        # key) to prove the shipped hash is the versioned one.
+        import hashlib
+        import json
+
+        from corvus.analysis import (
+            CANONICALIZE_VERSION, _fraction_to_str, _signal_to_dict,
+        )
+
+        message_id, user_id, channel_id = "m006", "U006", "C001"
+        timestamp = "2026-06-19T10:05:00"
+        text = "Quick question about the deployment."
+
+        result = self.analyzer.analyze(
+            message_id=message_id, user_id=user_id, channel_id=channel_id,
+            text=text, timestamp=timestamp,
+            conversation_history=[], user_baseline=CLEAN_BASELINE,
+        )
+
+        versioned = {
+            "version": CANONICALIZE_VERSION,
+            "message_id": message_id, "user_id": user_id,
+            "channel_id": channel_id, "timestamp": timestamp,
+            "grice": _signal_to_dict(result.grice),
+            "influence": _signal_to_dict(result.influence),
+            "aristotle": _signal_to_dict(result.aristotle),
+            "berne": _signal_to_dict(result.berne),
+            "linguistic": _signal_to_dict(result.linguistic),
+            "peirce": _signal_to_dict(result.peirce),
+            "active_signals": result.active_signals,
+            "baseline_delta": _fraction_to_str(result.baseline_delta),
+        }
+        expected = hashlib.sha256(
+            json.dumps(versioned, sort_keys=True, ensure_ascii=False).encode("utf-8")
+        ).hexdigest()
+        assert result.audit_hash == expected
+
+        unversioned = dict(versioned)
+        del unversioned["version"]
+        stale = hashlib.sha256(
+            json.dumps(unversioned, sort_keys=True, ensure_ascii=False).encode("utf-8")
+        ).hexdigest()
+        assert result.audit_hash != stale

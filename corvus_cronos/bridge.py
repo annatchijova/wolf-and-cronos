@@ -113,6 +113,7 @@ for _lib in ("corvus", "cronos"):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from corvus.analysis import CANONICALIZE_VERSION
 from corvus.analysis.l1_grice import GriceDetector
 from corvus.analysis.l2_carnegie_cialdini import InfluenceDetector
 from corvus.analysis.l3_aristotle import AristotleDetector
@@ -424,9 +425,16 @@ class CorvosCronosBridge:
             baseline_delta = Fraction(active_count, 5) - avg
 
         # Phase 5: SHA-256 audit hash over all agent signals
+        # FIX: stamp the same canonicalization version as the legacy
+        # corvus.analysis.Analyzer path (corvus.analysis.CANONICALIZE_VERSION)
+        # computing the equivalent hash, so a future signal-schema change is
+        # tamper-evident here too instead of silently changing the hash.
         audit_hash = hashlib.sha256(
             json.dumps(
-                {k: _sig_to_dict(v) for k, v in signals.items()},
+                {
+                    "version": CANONICALIZE_VERSION,
+                    **{k: _sig_to_dict(v) for k, v in signals.items()},
+                },
                 sort_keys=True, ensure_ascii=False, separators=(",", ":"),
             ).encode()
         ).hexdigest()
