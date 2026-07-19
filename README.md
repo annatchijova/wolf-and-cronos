@@ -119,7 +119,7 @@ The two engines, on their own:
 
 ![CRONOS architecture — hash-chained hypothesis traces, quality/diversity scoring, and the tamper-evident SHA-256 chain](visual/cronos_architecture.svg)
 
-### Deployment topology (Alibaba Cloud ECS — deploy pending)
+### Deployment topology (live on Alibaba Cloud ECS)
 
 ```
   Judge / operator                     Alibaba Cloud ECS
@@ -135,7 +135,7 @@ The two engines, on their own:
                                        DashScope API (qwen-plus / qwen-max)
 ```
 
-The full engine runs entirely locally today (95 + 165 + 118 tests, zero cloud dependency); `api_server.py`, the `Dockerfile`, and the nightly red-team job are the deployable product. What remains is standing it up on ECS the same way `rebound` and `raven-memory` already are, and running the first live pass against DashScope.
+The full engine runs entirely locally with zero cloud dependency (95 + 165 + 118 tests) **and is now deployed live on Alibaba Cloud ECS** (US-Virginia, Docker), serving `/analyze`, `/chat`, and the browser console against the live DashScope endpoint. See [Running live on Alibaba Cloud](#running-live-on-alibaba-cloud) at the end for the deployment evidence and the console in action.
 
 ---
 
@@ -457,6 +457,44 @@ CRONOS and CORVUS were built by Anna Tchijova during the hackathon period and ar
 ## License
 
 Apache License 2.0 — see [LICENSE](LICENSE). The license covers the entire repository, including the vendored `cronos/` and `corvus/` engines.
+
+---
+
+## Running live on Alibaba Cloud
+
+The full product is deployed and running on **Alibaba Cloud ECS** (US-Virginia, Docker), reachable on port 8022, with `qwen-plus` narration live via DashScope.
+
+**The deployment.** The ECS instance running, the Docker image built and launched from the ECS workbench — `/health` returns `qwen_narration: configured` and `POST /chat` gets a live `qwen-plus` reply — and the security group opening the port:
+
+![Alibaba Cloud ECS console — the wolf-and-cronos instance running in US-Virginia (47.85.85.16, ecs.c9i.large)](visual/screenshot-2026-07-18-20-29-24.png)
+
+![Alibaba Cloud ECS workbench — docker build and run; /health returns qwen_narration configured; POST /chat returns a live qwen-plus reply explaining CRONOS](visual/screenshot-2026-07-18-20-47-55.png)
+
+![Alibaba Cloud ECS security group — inbound port 8022 open](visual/screenshot-2026-07-18-20-50-40.png)
+
+**The console, in action.** The live browser console on `47.85.85.16:8022`, analyzing the Wolf against the deployed engine: six agents vote, the corroboration gate seals the verdict, the CRONOS chain verifies every hash, the devil's-advocate argues against it, and `qwen-plus` narrates the sealed result — ending in the chain of custody.
+
+<img src="visual/real/run-2026-07-18-21-06-34.png" width="100%" alt="Live console on Alibaba Cloud — analyzing the Wolf's first message: WATCH verdict, the six-agent grid, and the verified CRONOS chain">
+
+<img src="visual/real/run-2026-07-18-21-06-39.png" width="100%" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
+
+<img src="visual/real/run-2026-07-18-21-06-49.png" width="100%" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
+
+<img src="visual/real/run-2026-07-18-21-06-53.png" width="100%" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
+
+<img src="visual/real/run-2026-07-18-21-07-06.png" width="100%" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
+
+<img src="visual/real/run-2026-07-18-21-07-11.png" width="100%" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
+
+<img src="visual/real/run-2026-07-18-21-07-19.png" width="100%" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
+
+<img src="visual/real/run-2026-07-18-21-07-24.png" width="100%" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
+
+<img src="visual/real/run-2026-07-18-21-07-29.png" width="100%" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
+
+<img src="visual/real/run-2026-07-18-21-07-34.png" width="100%" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
+
+<img src="visual/real/run-2026-07-18-21-07-38.png" width="100%" alt="Live console on Alibaba Cloud — the qwen-plus narration explaining the WATCH verdict, and the chain of custody with 7 traces sealed">
 
 ---
 
