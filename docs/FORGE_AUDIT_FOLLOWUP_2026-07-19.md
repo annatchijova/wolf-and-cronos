@@ -10,8 +10,8 @@ as leads, not as defects, until re-verified against the live source.
 ## Outcome
 
 The audit did not identify a confirmed remote exploit in the exercised paths.
-It did, however, expose two already-corrected reliability/integrity defects and
-three additional confirmed integrity gaps now **under active remediation**.
+It did, however, expose five confirmed reliability/integrity defects. All five
+are now corrected and verified.
 
 This follow-up matters because several initially dismissed observations were
 legitimate *anomaly signals*: the detector's literal classification was a false
@@ -26,18 +26,20 @@ license to stop reading.
 | F-001 | Malformed evidence bundles raised `JSONDecodeError` although `verify_bundle()` promised an integrity boolean. | Direct malformed-bundle induction reproduced the exception. | Corrected in `3b407c3`; malformed structures now fail closed. |
 | F-002 | The legacy `Analyzer` folded a crashed detector into an apparent silent result. | Forced detector failure produced no explicit degradation state. | Corrected in `3b407c3`; crash state is represented separately. |
 
-## Confirmed integrity gaps under active remediation
+## Confirmed integrity gaps — corrected
 
-| ID | Severity | Finding | Code evidence | Required invariant |
-|---|---|---|---|---|
-| F-003 | High | The sealed-bundle claim was disconnected from the production verdict path. `seal_bundle()` existed, but the audit snapshot showed no production caller and `Verdict.bundle_path` was not assigned. Meanwhile CRITICAL-facing text claimed a sealed evidence bundle. | `corvus/corvus/verdict/bundle.py`, `corvus/corvus/models.py`, `corvus/corvus/verdict/engine.py`, `corvus/mcp_server.py`, `corvus_cronos/bridge.py`. | A CRITICAL result must either carry a successfully written, verifiable bundle path or explicitly report sealing failure; it must never claim a seal that was not produced. |
-| F-004 | Medium | The CORVUS memory audit-chain hash has canonical JSON but no schema/canonicalization version. | `corvus/corvus/memory/audit.py::_compute_entry_hash`. | A future serialized-schema change must be distinguishable from historical hashes and independently reproducible. |
-| F-005 | Medium | Signal `audit_hash` payloads have no schema version in either the legacy Analyzer or bridge path. | `corvus/corvus/analysis/__init__.py` and `corvus_cronos/bridge.py` Phase 5. | A signal-schema evolution must be bound into the hashed bytes, rather than silently changing the interpretation of an identical-looking SHA-256 value. |
+| ID | Severity | Finding | Code evidence | Required invariant | Status |
+|---|---|---|---|---|---|
+| F-003 | High | The sealed-bundle claim was disconnected from the production verdict path. `seal_bundle()` existed, but the audit snapshot showed no production caller and `Verdict.bundle_path` was not assigned. Meanwhile CRITICAL-facing text claimed a sealed evidence bundle. | `corvus/corvus/verdict/bundle.py`, `corvus/corvus/models.py`, `corvus/corvus/verdict/engine.py`, `corvus/mcp_server.py`, `corvus_cronos/bridge.py`. | A CRITICAL result must either carry a successfully written, verifiable bundle path or explicitly report sealing failure; it must never claim a seal that was not produced. | Corrected in `7963581`. `VerdictEngine.compute()` calls `seal_bundle()` for every CRITICAL verdict — the one path both `mcp_server.py` and `bridge.py` pass through — and sets `bundle_path`. A sealing `OSError` does not crash analysis; it retracts the claim in `recommendation` instead of silently presenting success. |
+| F-004 | Medium | The CORVUS memory audit-chain hash has canonical JSON but no schema/canonicalization version. | `corvus/corvus/memory/audit.py::_compute_entry_hash`. | A future serialized-schema change must be distinguishable from historical hashes and independently reproducible. | Corrected in `7963581`. Added `CANONICALIZE_VERSION` with the same backward-compatible migration already proven in `cronos/chain.py`: legacy rows (`version` NULL) recompute against their original unversioned form; new rows are versioned. |
+| F-005 | Medium | Signal `audit_hash` payloads have no schema version in either the legacy Analyzer or bridge path. | `corvus/corvus/analysis/__init__.py` and `corvus_cronos/bridge.py` Phase 5. | A signal-schema evolution must be bound into the hashed bytes, rather than silently changing the interpretation of an identical-looking SHA-256 value. | Corrected in `7963581`. Both paths now stamp the same `corvus.analysis.CANONICALIZE_VERSION` instead of a silently divergent copy. No migration was needed: nothing re-derives this hash from historically stored data. |
 
-The corrections for F-003 through F-005 are in progress at the time of this
-report. This document records the audited pre-fix condition; it does not claim
-the new implementation is complete until its regression tests and full suite
-have passed.
+A side effect surfaced by F-003 itself: once `seal_bundle()` actually runs, a
+bare `Config()` in a test writes real files under the developer's
+`~/.corvus/`. Fixed in the same commit with a repository-root `conftest.py`
+that isolates `CORVUS_BUNDLE_DIR`/`CORVUS_DB_PATH` at module level (before
+`corvus/mcp_server.py`'s module-level `Config()` singleton can resolve to the
+real default), plus one existing test isolated to `tmp_path`.
 
 ## Dismissals verified as expected behavior
 
@@ -63,12 +65,22 @@ have passed.
 4. Versioning must be assessed per hash domain. A versioned bundle or CRONOS
    chain does not automatically version a separate CORVUS audit hash.
 
-## Verification required for the in-progress corrections
+## Verification performed for F-003 through F-005
 
-- Add integration tests that execute both production CRITICAL paths and verify
-  `bundle_path`, bundle contents, and tamper detection.
-- Add compatibility/version tests for the CORVUS audit chain and both signal
-  audit-hash producers.
-- Run the CORVUS, CRONOS, bridge, and API suites after the changes.
-- Record the fixing commit(s) and final test evidence in this document or the
-  associated changelog once remediation is complete.
+- `TestCriticalBundleSealing` (`corvus/tests/test_verdict.py`): a CRITICAL
+  verdict writes a real, `verify_bundle()`-passing bundle and sets
+  `bundle_path`; a non-CRITICAL verdict never seals; a forced sealing failure
+  (`OSError`) leaves `bundle_path=None` and visibly amends `recommendation`
+  rather than failing silently.
+- `test_legacy_unversioned_entry_still_verifies` (`corvus/tests/test_memory.py`):
+  a hand-inserted pre-fix row (`version` NULL) still verifies against its
+  original unversioned hash, alongside a new versioned entry in the same chain.
+- `test_audit_hash_is_versioned` (`corvus/tests/test_analysis.py`) and
+  `test_audit_hash_shares_the_analyzer_canonicalize_version`
+  (`tests/test_bridge.py`): both signal-hash producers are pinned to the
+  shared `CANONICALIZE_VERSION` constant, not independent copies.
+- Full suite: 124 passed in `tests/` (default `testpaths`) + 106 passed in
+  `corvus/tests/` (outside `testpaths`, run explicitly) = 230 passed, 51
+  subtests passed. Confirmed no stray file lands under the real `~/.corvus`
+  after a run.
+- Fixing commit: `7963581`.
