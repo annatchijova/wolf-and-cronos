@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="visual/logo.jpeg" alt="CORVUS × CRONOS logo" width="420"/>
+  <img src="visual/logo.jpeg" alt="CORVUS × CRONOS logo" width="280"/>
 </p>
 
 # CORVUS + CRONOS
@@ -68,9 +68,9 @@ Instead of asking an LLM to decide whether a message is manipulative, the platfo
 
 **[▶ Interactive architecture diagram](https://annatchijova.github.io/vigia/diagrama.html)** — one pipeline, one codebase: detection → gate → seal → narration.
 
-![CORVUS × CRONOS architecture — text artifact through the six-agent CORVUS analysis layer and the corroboration gate](visual/diagrama1.png)
+<img src="visual/diagrama1.png" width="680" alt="CORVUS × CRONOS architecture — text artifact through the six-agent CORVUS analysis layer and the corroboration gate">
 
-![CORVUS × CRONOS architecture — verdict engine and CRONOS trace chain seal the verdict, then the read-only Qwen narrator explains it](visual/diagrama2.png)
+<img src="visual/diagrama2.png" width="680" alt="CORVUS × CRONOS architecture — verdict engine and CRONOS trace chain seal the verdict, then the read-only Qwen narrator explains it">
 
 <details>
 <summary>The same flow as text (for readers of the raw file)</summary>
@@ -119,9 +119,9 @@ TEXT ARTIFACT
 
 The two engines, on their own:
 
-![CORVUS analysis architecture — the six theoretical frameworks feeding the verdict engine](visual/architecture_diagram_corvus.svg)
+<img src="visual/architecture_diagram_corvus.svg" width="700" alt="CORVUS analysis architecture — the six theoretical frameworks feeding the verdict engine">
 
-![CRONOS architecture — hash-chained hypothesis traces, quality/diversity scoring, and the tamper-evident SHA-256 chain](visual/cronos_architecture.svg)
+<img src="visual/cronos_architecture.svg" width="700" alt="CRONOS architecture — hash-chained hypothesis traces, quality and diversity scoring, and the tamper-evident SHA-256 chain">
 
 ### Deployment topology (live on Alibaba Cloud ECS)
 
@@ -231,13 +231,13 @@ In all three, the same discipline: rival hypotheses recorded, dead ones discarde
 
 **These weren't hand-authored.** Here is Qwen Plus driving the CRONOS MCP server live in [opencode](https://opencode.ai) — the `cronos_*` tool calls happening as it reasons (bottom bar: *Build · Qwen Plus · Qwen Cloud (DashScope)*, right panel: *cronos Connected*), and the sealed audit trail it wrote, ending in `chain_ok: true`:
 
-![opencode running Qwen Plus against the CRONOS MCP server — the forensic prompt and the live cronos_* tool calls](visual/cronos/opencode-2026-07-18-21-48-13.png)
+<img src="visual/cronos/opencode-2026-07-18-21-48-13.png" width="720" alt="opencode running Qwen Plus against the CRONOS MCP server — the forensic prompt and the live cronos tool calls">
 
-![Qwen Plus completing the forensic investigation through CRONOS MCP — competing hypotheses, evidence, discards, diversity-capped SUSPICION verdict, and an actionable recommendation](visual/cronos/opencode-2026-07-18-21-48-16.png)
+<img src="visual/cronos/opencode-2026-07-18-21-48-16.png" width="720" alt="Qwen Plus completing the forensic investigation through CRONOS MCP — competing hypotheses, evidence, discards, diversity-capped SUSPICION verdict, and an actionable recommendation">
 
-![Qwen Plus requesting the sealed CRONOS trace — the rendered step-by-step record shows hypotheses, supporting and refuting evidence, discards, quality, confidence cap, and chain integrity](visual/cronos/opencode-2026-07-18-21-55-27.png)
+<img src="visual/cronos/opencode-2026-07-18-21-55-27.png" width="720" alt="Qwen Plus requesting the sealed CRONOS trace — the rendered step-by-step record shows hypotheses, supporting and refuting evidence, discards, quality, confidence cap, and chain integrity">
 
-![the audit trail Qwen wrote for the run — hypotheses, discards, the SUSPICION verdict, diversity-capped confidence, and chain_ok true](visual/cronos/opencode-2026-07-18-21-55-31.png)
+<img src="visual/cronos/opencode-2026-07-18-21-55-31.png" width="720" alt="the audit trail Qwen wrote for the run — hypotheses, discards, the SUSPICION verdict, diversity-capped confidence, and chain OK">
 
 ---
 
@@ -500,35 +500,35 @@ The full product is deployed and running on **Alibaba Cloud ECS** (US-Virginia, 
 
 **The deployment.** The ECS instance running, the Docker image built and launched from the ECS workbench — `/health` returns `qwen_narration: configured` and `POST /chat` gets a live `qwen-plus` reply — and the security group opening the port:
 
-![Alibaba Cloud ECS console — the wolf-and-cronos instance running in US-Virginia (47.85.85.16, ecs.c9i.large)](visual/screenshot-2026-07-18-20-29-24.png)
+<img src="visual/screenshot-2026-07-18-20-29-24.png" width="720" alt="Alibaba Cloud ECS console — the wolf-and-cronos instance running in US-Virginia">
 
-![Alibaba Cloud ECS workbench — docker build and run; /health returns qwen_narration configured; POST /chat returns a live qwen-plus reply explaining CRONOS](visual/screenshot-2026-07-18-20-47-55.png)
+<img src="visual/screenshot-2026-07-18-20-47-55.png" width="720" alt="Alibaba Cloud ECS workbench — Docker build and run; health and live Qwen response">
 
-![Alibaba Cloud ECS security group — inbound port 8022 open](visual/screenshot-2026-07-18-20-50-40.png)
+<img src="visual/screenshot-2026-07-18-20-50-40.png" width="720" alt="Alibaba Cloud ECS security group — inbound port 8022 open">
 
 **The console, in action.** The live browser console on `47.85.85.16:8022`, analyzing the Wolf against the deployed engine: six agents vote, the corroboration gate seals the verdict, the CRONOS chain verifies every hash, the devil's-advocate argues against it, and `qwen-plus` narrates the sealed result — ending in the chain of custody.
 
-<img src="visual/real/run-2026-07-18-21-06-34.png" width="100%" alt="Live console on Alibaba Cloud — analyzing the Wolf's first message: WATCH verdict, the six-agent grid, and the verified CRONOS chain">
+<img src="visual/real/run-2026-07-18-21-06-34.png" width="640" alt="Live console on Alibaba Cloud — analyzing the Wolf's first message: WATCH verdict, the six-agent grid, and the verified CRONOS chain">
 
-<img src="visual/real/run-2026-07-18-21-06-39.png" width="100%" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
+<img src="visual/real/run-2026-07-18-21-06-39.png" width="640" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
 
-<img src="visual/real/run-2026-07-18-21-06-49.png" width="100%" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
+<img src="visual/real/run-2026-07-18-21-06-49.png" width="640" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
 
-<img src="visual/real/run-2026-07-18-21-06-53.png" width="100%" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
+<img src="visual/real/run-2026-07-18-21-06-53.png" width="640" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
 
-<img src="visual/real/run-2026-07-18-21-07-06.png" width="100%" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
+<img src="visual/real/run-2026-07-18-21-07-06.png" width="640" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
 
-<img src="visual/real/run-2026-07-18-21-07-11.png" width="100%" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
+<img src="visual/real/run-2026-07-18-21-07-11.png" width="640" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
 
-<img src="visual/real/run-2026-07-18-21-07-19.png" width="100%" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
+<img src="visual/real/run-2026-07-18-21-07-19.png" width="640" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
 
-<img src="visual/real/run-2026-07-18-21-07-24.png" width="100%" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
+<img src="visual/real/run-2026-07-18-21-07-24.png" width="640" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
 
-<img src="visual/real/run-2026-07-18-21-07-29.png" width="100%" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
+<img src="visual/real/run-2026-07-18-21-07-29.png" width="640" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
 
-<img src="visual/real/run-2026-07-18-21-07-34.png" width="100%" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
+<img src="visual/real/run-2026-07-18-21-07-34.png" width="640" alt="CORVUS × CRONOS live console on Alibaba Cloud ECS">
 
-<img src="visual/real/run-2026-07-18-21-07-38.png" width="100%" alt="Live console on Alibaba Cloud — the qwen-plus narration explaining the WATCH verdict, and the chain of custody with 7 traces sealed">
+<img src="visual/real/run-2026-07-18-21-07-38.png" width="640" alt="Live console on Alibaba Cloud — the Qwen Plus narration explaining the WATCH verdict, and the chain of custody with 7 traces sealed">
 
 ---
 
