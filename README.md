@@ -288,6 +288,8 @@ The fix lives in the bridge, not in CORVUS: a bounded 6-message rolling window (
 
 Two rounds of adversarial audit against this bridge specifically (`docs/RED_TEAM_REPORT.md`); CORVUS and CRONOS internals were read, never modified. The findings that shaped the current code:
 
+The subsequent [FORGE audit follow-up](docs/FORGE_AUDIT_FOLLOWUP_2026-07-19.md) records both verified expected false positives and the integrity anomalies they helped uncover, including corrections currently under active remediation.
+
 | # | Finding | Fix |
 |---|---|---|
 | RT-01 | A detector crash was indistinguishable from a genuine `SILENT` | Crashes are caught and reported via `crashed_agents`, separate from real silence |
