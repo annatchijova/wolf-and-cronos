@@ -213,6 +213,24 @@ Any reasoning task — not just forensics — is a valid use for it.
 
 ---
 
+## This isn't tied to CORVUS
+
+**CRONOS is domain-agnostic infrastructure for auditable agent reasoning.** Any MCP-capable agent can record its own black box: engineering diagnosis (see `ENG-DIAG-001` below), medical differential diagnosis, legal case analysis, financial risk assessment. Anywhere an agent reasons toward a high-stakes decision, CRONOS makes that reasoning inspectable and honest about its own uncertainty — not just *recorded*, but *constrained* by what it actually knows.
+
+The mechanism translates without changing a line. Take medicine: a diagnostic agent registers several differential hypotheses, ties each clinical finding to the one it supports or refutes, gets a **contradiction flagged** the moment symptoms point two ways, and a confidence that **cannot be inflated** beyond what the real diversity of data (history + labs + imaging, not just one) supports. There, the diversity ceiling isn't a technical curiosity — it's the difference between a model that says "95% sure" from a single data point and one forced to admit it lacks evidence before raising its confidence.
+
+We proved it by driving CRONOS with **Qwen Plus** (not Claude) via [opencode](https://opencode.ai) + the CRONOS MCP server, on three deliberately different tasks. Each sealed trace was rendered read-only into a report (folder [`REAL-Cronos-Qwen/`](REAL-Cronos-Qwen)):
+
+| Run | What the Qwen agent was asked to do | Outcome |
+|---|---|---|
+| [**Forensic** — evidence for cause](https://annatchijova.github.io/vigia/cronos-1.html) | Decide whether fabricated evidence justifies firing an employee | Behavioral MALICE, but **capped at SUSPICION** by a weak chain of custody (Daubert) |
+| [**Security** — insider or intruder?](https://annatchijova.github.io/vigia/cronos-3.html) | Attribute a data exfiltration to an insider or stolen credentials | Conflicting evidence → **CRONOS flagged a Type A contradiction**; verdict held at SUSPICION, not confirmed |
+| [**Engineering** — the nightly export went silent](https://annatchijova.github.io/vigia/cronos-2.html) | Root-cause a job silently producing 0 rows | **Non-forensic** diagnosis: a timezone bug, plus a swallowed exception that hid it |
+
+In all three, the same discipline: rival hypotheses recorded, dead ones discarded with reasons, contradictions surfaced, and confidence **capped by observational diversity** — a Qwen agent, not Claude, sealing each into the tamper-evident chain.
+
+---
+
 ## How six agents reach one verdict
 
 A single arbiter (gate threshold = 1: any agent fires) turns every lone false positive into an alarm. Consensus mode (gate threshold = 2) requires two independent theoretical frameworks to corroborate before any verdict rises above SILENT — a structural defense against alert fatigue, not a tuning knob. Measured FPR/FNR figures will be published once the live Qwen/Alibaba deployment pass is done (`benchmark/benchmark.py` reproduces them on the built-in corpus).
