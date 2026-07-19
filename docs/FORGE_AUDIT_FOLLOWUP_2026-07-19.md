@@ -84,3 +84,25 @@ real default), plus one existing test isolated to `tmp_path`.
   subtests passed. Confirmed no stray file lands under the real `~/.corvus`
   after a run.
 - Fixing commit: `7963581`.
+
+## Publication and restoration record
+
+The complete remediation sequence is published on `origin/main` in
+`wolf-and-cronos` (`905367b..7042537`):
+
+- `3b407c3` — fail-closed malformed-bundle verification and visible legacy
+  detector crashes (F-001/F-002).
+- `e2b3c78` — initial FORGE audit follow-up record.
+- `7963581` — production CRITICAL bundle sealing, two additional versioned
+  hash domains, and test-environment isolation (F-003/F-004/F-005 plus the
+  discovered test-side-effect correction).
+- `7042537` — closure update documenting the corrected and verified state of
+  all five findings.
+
+Restoration points were retained with the release history, including
+`pre-forge-fixes-20260719-182903` and
+`pre-forge-anomalies-fix-20260719-185540`.
+
+This report is the repository-level record of the FORGE audit: what was
+observed, what was correctly dismissed, which anomalies led to actual defects,
+and the code/test evidence that closed each confirmed finding.
